@@ -198,9 +198,11 @@ textarea {
     }
 }
 
-.fade-enter-active,
+.fade-enter-active {
+    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
 .fade-leave-active {
-    transition: opacity 0.25s ease;
+    transition: opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
 }
 
 .fade-enter-from,
@@ -208,9 +210,11 @@ textarea {
     opacity: 0;
 }
 
-.fade-scale-enter-active,
+.fade-scale-enter-active {
+    transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1), transform 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
 .fade-scale-leave-active {
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15), transform 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
 }
 
 .fade-scale-enter-from {
@@ -220,16 +224,19 @@ textarea {
 
 .fade-scale-leave-to {
     opacity: 0;
-    transform: scale(0.94);
+    transform: scale(0.96);
 }
 
 .n-tabs-pane-wrapper {
-    transition: opacity 0.2s ease !important;
+    transition: opacity 0.18s cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
-.n-tab-pane-enter-active,
+.n-tab-pane-enter-active {
+    transition: opacity 0.18s cubic-bezier(0.2, 0, 0, 1) !important;
+    transform: none !important;
+}
 .n-tab-pane-leave-active {
-    transition: opacity 0.2s ease !important;
+    transition: opacity 0.12s cubic-bezier(0.3, 0, 0.8, 0.15) !important;
     transform: none !important;
 }
 
@@ -245,7 +252,7 @@ textarea {
 }
 
 .n-modal-body-wrapper--enter-active {
-    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    transition: opacity 0.3s cubic-bezier(0.2, 0, 0, 1), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 .n-modal-body-wrapper--leave-active {

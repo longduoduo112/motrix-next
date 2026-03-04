@@ -11,6 +11,9 @@ import App from './App.vue'
 import 'virtual:uno.css'
 import './styles/variables.css'
 
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import { nextTick } from 'vue'
+
 const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
@@ -18,6 +21,12 @@ app.use(router)
 app.use(i18n)
 
 app.mount('#app')
+
+nextTick(() => {
+    setTimeout(() => {
+        getCurrentWindow().show()
+    }, 50)
+})
 
 const preferenceStore = usePreferenceStore()
 const taskStore = useTaskStore()
