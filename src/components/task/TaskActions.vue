@@ -7,7 +7,8 @@ import { usePreferenceStore } from '@/stores/preference'
 import { ADD_TASK_TYPE } from '@shared/constants'
 import { remove } from '@tauri-apps/plugin-fs'
 import { getTaskName } from '@shared/utils'
-import { NButton, NIcon, NTooltip, NCheckbox, useMessage, useDialog } from 'naive-ui'
+import { NButton, NIcon, NTooltip, NCheckbox, useDialog } from 'naive-ui'
+import { useAppMessage } from '@/composables/useAppMessage'
 import {
   AddOutline, PlayOutline, PauseOutline, TrashOutline,
   RefreshOutline, CloseOutline
@@ -17,7 +18,7 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const taskStore = useTaskStore()
 const preferenceStore = usePreferenceStore()
-const message = useMessage()
+const message = useAppMessage()
 const dialog = useDialog()
 
 const refreshing = ref(false)
@@ -81,20 +82,20 @@ function onDeleteAll() {
 
 function resumeAll() {
   taskStore.resumeAllTask()
-    .then(() => message.success(t('task.resume-all-task-success') || 'Resumed', { closable: true }))
-    .catch(() => message.error(t('task.resume-all-task-fail') || 'Failed', { closable: true }))
+    .then(() => message.success(t('task.resume-all-task-success')))
+    .catch(() => message.error(t('task.resume-all-task-fail')))
 }
 
 function pauseAll() {
   taskStore.pauseAllTask()
-    .then(() => message.success(t('task.pause-all-task-success') || 'Paused', { closable: true }))
-    .catch(() => message.error(t('task.pause-all-task-fail') || 'Failed', { closable: true }))
+    .then(() => message.success(t('task.pause-all-task-success')))
+    .catch(() => message.error(t('task.pause-all-task-fail')))
 }
 
 function purgeRecord() {
   taskStore.purgeTaskRecord()
-    .then(() => message.success(t('task.purge-record-success') || 'Purged', { closable: true }))
-    .catch(() => message.error(t('task.purge-record-fail') || 'Failed', { closable: true }))
+    .then(() => message.success(t('task.purge-record-success')))
+    .catch(() => message.error(t('task.purge-record-fail')))
 }
 </script>
 

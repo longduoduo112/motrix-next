@@ -8,7 +8,8 @@ import { getTaskUri, getTaskName } from '@shared/utils'
 import { remove, stat } from '@tauri-apps/plugin-fs'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import aria2Api from '@/api/aria2'
-import { useDialog, useMessage, NCheckbox } from 'naive-ui'
+import { useDialog, NCheckbox } from 'naive-ui'
+import { useAppMessage } from '@/composables/useAppMessage'
 import TaskList from '@/components/task/TaskList.vue'
 import TaskActions from '@/components/task/TaskActions.vue'
 import TaskDetail from '@/components/task/TaskDetail.vue'
@@ -20,7 +21,7 @@ const taskStore = useTaskStore()
 const appStore = useAppStore()
 const preferenceStore = usePreferenceStore()
 const dialog = useDialog()
-const message = useMessage()
+const message = useAppMessage()
 
 const subnavs = computed(() => [
   { key: 'active', title: t('task.active') || 'Active' },
@@ -131,7 +132,7 @@ async function handleShowInFolder(task: Record<string, unknown>) {
   try {
     await revealItemInDir(filePath)
   } catch {
-    message.warning(t('task.file-not-exist'), { closable: true })
+    message.warning(t('task.file-not-exist'))
   }
 }
 </script>

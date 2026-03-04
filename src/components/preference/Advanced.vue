@@ -23,8 +23,9 @@ import userAgentMap from '@shared/ua'
 import {
   NForm, NFormItem, NInput, NInputNumber, NInputGroup, NSwitch, NSelect, NTag,
   NButton, NButtonGroup, NSpace, NDivider, NIcon, NCheckbox,
-  useMessage, useDialog,
+  useDialog,
 } from 'naive-ui'
+import { useAppMessage } from '@/composables/useAppMessage'
 import {
   SyncOutline, DiceOutline, FolderOpenOutline, LinkOutline,
   CloudDownloadOutline,
@@ -34,7 +35,7 @@ import { check } from '@tauri-apps/plugin-updater'
 const { t } = useI18n()
 const preferenceStore = usePreferenceStore()
 const taskStore = useTaskStore()
-const message = useMessage()
+const message = useAppMessage()
 const dialog = useDialog()
 const checking = ref(false)
 
@@ -148,7 +149,7 @@ async function loadPaths() {
 
 async function handleSyncTracker() {
   if (form.value.trackerSource.length === 0) {
-    message.warning(t('preferences.bt-tracker-select-source'), { closable: true })
+    message.warning(t('preferences.bt-tracker-select-source'))
     return
   }
   syncingTracker.value = true
@@ -158,12 +159,12 @@ async function handleSyncTracker() {
     if (text) {
       form.value.btTracker = text
       form.value.lastSyncTrackerTime = Date.now()
-      message.success(t('preferences.bt-tracker-sync-succeed'), { closable: true })
+      message.success(t('preferences.bt-tracker-sync-succeed'))
     } else {
-      message.error(t('preferences.bt-tracker-sync-failed'), { closable: true })
+      message.error(t('preferences.bt-tracker-sync-failed'))
     }
   } catch {
-    message.error(t('preferences.bt-tracker-sync-failed'), { closable: true })
+    message.error(t('preferences.bt-tracker-sync-failed'))
   } finally {
     syncingTracker.value = false
   }
@@ -186,15 +187,15 @@ async function handleCheckUpdate() {
             await update.downloadAndInstall()
             relaunch()
           } catch (e) {
-            message.error(String(e), { closable: true })
+            message.error(String(e))
           }
         },
       })
     } else {
-      message.success(t('preferences.is-latest-version') || 'Already up to date', { closable: true })
+      message.success(t('preferences.is-latest-version'))
     }
   } catch (e) {
-    message.error(t('preferences.check-update-failed') || 'Check failed', { closable: true })
+    message.error(t('preferences.check-update-failed'))
   } finally {
     checking.value = false
   }
@@ -231,7 +232,7 @@ function handleSessionReset() {
       try {
         await taskStore.purgeTaskRecord()
         await taskStore.pauseAllTask()
-        message.success(t('preferences.session-reset') + ' ✓', { closable: true })
+        message.success(t('preferences.session-reset'))
       } catch {}
     },
   })
@@ -254,7 +255,7 @@ function handleFactoryReset() {
 
 function handleSave() {
   if (!form.value.rpcSecret) {
-    message.error(t('preferences.rpc-secret-empty-warning') || 'RPC Secret is required', { closable: true })
+    message.error(t('preferences.rpc-secret-empty-warning'))
     return
   }
   const data: Record<string, unknown> = {
@@ -276,7 +277,7 @@ function handleSave() {
       'bt-tracker': convertLineToComma(form.value.btTracker),
     },
   }).catch(console.error)
-  message.success(t('preferences.save-success-message'), { closable: true })
+  message.success(t('preferences.save-success-message'))
 }
 
 function handleReset() {

@@ -9,14 +9,16 @@ import { downloadDir } from '@tauri-apps/api/path'
 import { extractSpeedUnit } from '@shared/utils'
 import {
   NForm, NFormItem, NInput, NInputNumber, NSelect, NCheckbox, NSwitch,
-  NButton, NSpace, NDivider, NInputGroup, useMessage, useDialog
+  NButton, NSpace, NDivider, NInputGroup, useDialog
 } from 'naive-ui'
 import { FolderOpenOutline } from '@vicons/ionicons5'
 import { NIcon } from 'naive-ui'
+import { useAppMessage } from '@/composables/useAppMessage'
 
 const { t } = useI18n()
 const preferenceStore = usePreferenceStore()
-const message = useMessage()
+
+const message = useAppMessage()
 const dialog = useDialog()
 const defaultDownloadDir = ref('')
 
@@ -177,7 +179,7 @@ function handleSave() {
       'seed-time': String(form.value.seedTime),
     },
   }).catch(console.error)
-  message.success(t('preferences.save-success-message'), { closable: true })
+  message.success(t('preferences.save-success-message'))
 
   if (newLocale !== prevLocale) {
     dialog.info({

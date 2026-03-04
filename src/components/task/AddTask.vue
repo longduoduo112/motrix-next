@@ -14,8 +14,9 @@ import bencode from 'bencode'
 import {
   NModal, NCard, NTabs, NTabPane, NForm, NFormItem, NInput, NInputNumber,
   NButton, NCheckbox, NSpace, NGrid, NGridItem, NIcon, NText, NInputGroup,
-  NCollapseTransition, NTooltip, NDataTable, useMessage
+  NCollapseTransition, NTooltip, NDataTable,
 } from 'naive-ui'
+import { useAppMessage } from '@/composables/useAppMessage'
 import type { DataTableColumns } from 'naive-ui'
 import { CloudUploadOutline, FolderOpenOutline, TrashOutline } from '@vicons/ionicons5'
 
@@ -27,7 +28,7 @@ const router = useRouter()
 const appStore = useAppStore()
 const taskStore = useTaskStore()
 const preferenceStore = usePreferenceStore()
-const message = useMessage()
+const message = useAppMessage()
 
 const activeTab = ref(props.type || ADD_TASK_TYPE.URI)
 const slideDirection = ref<'left' | 'right'>('left')
