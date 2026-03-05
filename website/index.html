@@ -490,7 +490,7 @@
         const assets = data.assets || [];
         const ver = data.tag_name || '';
 
-        versionEl.textContent = ver + ' · ~10 MB';
+        versionEl.textContent = 'Version: ' + ver;
 
         const resolved = {};
         for (const p of PLATFORMS) {
