@@ -73,7 +73,7 @@ onMounted(() => {
   taskStore.setOnTaskError((task) => {
     if (preferenceStore.config?.taskNotification === false) return
     const i18nKey = task.errorCode ? ARIA2_ERROR_CODES[task.errorCode] : undefined
-    const taskName = getTaskName(task, { defaultName: 'Unknown', maxLen: 40 })
+    const taskName = getTaskName(task, { defaultName: 'Unknown' })
     const errorText = i18nKey ? t(i18nKey) : task.errorMessage || t('task.error-unknown')
     message.error(`${taskName}: ${errorText}`, { duration: 8000, closable: true })
   })
@@ -82,14 +82,14 @@ onBeforeUnmount(stopPolling)
 
 // File deletion handled by @/composables/useFileDelete
 function handlePauseTask(task: Aria2Task) {
-  const taskName = getTaskName(task, { defaultName: 'Unknown', maxLen: 40 })
+  const taskName = getTaskName(task, { defaultName: 'Unknown' })
   taskStore
     .pauseTask(task)
     .then(() => message.success(t('task.pause-task-success', { taskName })))
     .catch(() => message.error(t('task.pause-task-fail', { taskName })))
 }
 function handleResumeTask(task: Aria2Task) {
-  const taskName = getTaskName(task, { defaultName: 'Unknown', maxLen: 40 })
+  const taskName = getTaskName(task, { defaultName: 'Unknown' })
   const { COMPLETE, ERROR, REMOVED } = TASK_STATUS
   if (task.status === ERROR || task.status === COMPLETE || task.status === REMOVED) {
     // Stopped tasks cannot be unpause'd — restart by re-adding the URI
@@ -111,7 +111,7 @@ function handleDeleteTask(task: Aria2Task) {
     return
   }
   const deleteFiles = ref(false)
-  const name = getTaskName(task, { defaultName: 'Unknown', maxLen: 50 })
+  const name = getTaskName(task, { defaultName: 'Unknown' })
   const d = dialog.warning({
     title: t('task.delete-task'),
     content: () =>
@@ -151,7 +151,7 @@ function handleDeleteTask(task: Aria2Task) {
   })
 }
 function handleDeleteRecord(task: Aria2Task) {
-  const taskName = getTaskName(task, { defaultName: 'Unknown', maxLen: 40 })
+  const taskName = getTaskName(task, { defaultName: 'Unknown' })
   taskStore
     .removeTaskRecord(task)
     .then(() => message.success(t('task.remove-record-success', { taskName })))

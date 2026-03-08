@@ -1,7 +1,6 @@
 /** @fileoverview Task metadata operations: naming, progress, BT detection, magnet links. */
 import { difference, parseInt } from 'lodash-es'
 import type { Aria2Task, Aria2File } from '@shared/types'
-import { ellipsis } from './format'
 
 /** Calculates download progress as a percentage. */
 export const calcProgress = (totalLength: string | number, completedLength: string | number, decimal = 2): number => {
@@ -34,12 +33,8 @@ const getFileNameFromFile = (file?: Aria2File): string => {
 }
 
 /** Resolves a human-readable task name from BT info or file path. */
-export const getTaskName = (
-  task: Aria2Task | null,
-  options: { defaultName?: string; maxLen?: number } = {},
-): string => {
-  const o = { defaultName: '', maxLen: 64, ...options }
-  const { defaultName, maxLen } = o
+export const getTaskName = (task: Aria2Task | null, options: { defaultName?: string } = {}): string => {
+  const { defaultName = '' } = options
   let result = defaultName
   if (!task) return result
 
@@ -47,10 +42,10 @@ export const getTaskName = (
   if (!files || files.length === 0) return result
 
   if (bittorrent && bittorrent.info && bittorrent.info.name) {
-    result = ellipsis(bittorrent.info.name, maxLen)
+    result = bittorrent.info.name
   } else if (files.length === 1) {
     const name = getFileNameFromFile(files[0])
-    result = name ? ellipsis(name, maxLen) : result
+    result = name || result
   }
 
   return result

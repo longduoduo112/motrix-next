@@ -12,8 +12,8 @@
     "windows": [
       {
         "title": "Motrix Next",
-        "width": 1024,
-        "height": 768,
+        "width": 1120,
+        "height": 700,
         "minWidth": 800,
         "minHeight": 540,
         "transparent": true,

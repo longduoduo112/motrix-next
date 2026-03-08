@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Notificar ao concluir download',
   'auto-purge-record': 'Limpar registros ao sair',
   'ui': 'Interface',
+  'appearance-section': 'Aparência',
+  'window-and-tray': 'Janela e bandeja',
   'appearance': 'Aparência',
   'detected-platform': 'Plataforma detectada',
   'theme-auto': 'Automático',

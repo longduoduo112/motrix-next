@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Melden bij voltooiing',
   'auto-purge-record': 'Records wissen bij afsluiten',
   'ui': 'Interface',
+  'appearance-section': 'Uiterlijk',
+  'window-and-tray': 'Venster & Systeemvak',
   'appearance': 'Uiterlijk',
   'detected-platform': 'Gedetecteerd platform',
   'theme-auto': 'Automatisch',

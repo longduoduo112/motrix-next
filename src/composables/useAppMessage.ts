@@ -1,6 +1,10 @@
 /** @fileoverview Composable providing application-level message notifications. */
 import { useMessage, type MessageOptions } from 'naive-ui'
 import { MESSAGE_DURATION } from '@shared/timing'
+import { ellipsis } from '@shared/utils/format'
+
+/** Maximum display length for toast notification content. */
+const TOAST_MAX_LENGTH = 64
 
 const DEFAULTS: MessageOptions = {
   closable: true,
@@ -19,6 +23,7 @@ function dedupShow(
   options?: MessageOptions,
 ) {
   const key = content
+  const display = ellipsis(content, TOAST_MAX_LENGTH)
   const existing = activeMessages.get(key)
   const duration = options?.duration ?? DEFAULTS.duration ?? MESSAGE_DURATION
 
@@ -27,14 +32,14 @@ function dedupShow(
     clearTimeout(existing.timer)
     activeMessages.delete(key)
     setTimeout(() => {
-      const el = fn(content, { ...DEFAULTS, ...options })
+      const el = fn(display, { ...DEFAULTS, ...options })
       const timer = setTimeout(() => activeMessages.delete(key), duration)
       activeMessages.set(key, { el, timer })
     }, 80)
     return existing.el
   }
 
-  const el = fn(content, { ...DEFAULTS, ...options })
+  const el = fn(display, { ...DEFAULTS, ...options })
   const timer = setTimeout(() => activeMessages.delete(key), duration)
   activeMessages.set(key, { el, timer })
   return el

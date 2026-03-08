@@ -284,6 +284,11 @@ onMounted(async () => {
 <template>
   <div class="preference-form-wrapper">
     <NForm label-placement="left" label-align="left" label-width="240px" size="small" class="form-preference">
+      <NDivider title-placement="left">Language</NDivider>
+      <NFormItem label="Select Language">
+        <NSelect v-model:value="form.locale" :options="localeOptions" style="width: 200px" />
+      </NFormItem>
+
       <NDivider title-placement="left">{{ t('preferences.auto-update') }}</NDivider>
       <NFormItem :label="t('preferences.auto-check-update')">
         <NSwitch v-model:value="form.autoCheckUpdate" />
@@ -326,32 +331,29 @@ onMounted(async () => {
       </NFormItem>
       <UpdateDialog ref="updateDialogRef" />
 
-      <NDivider title-placement="left">{{ t('preferences.ui') }}</NDivider>
+      <NDivider title-placement="left">{{ t('preferences.appearance-section') }}</NDivider>
       <NFormItem :label="t('preferences.detected-platform')">
         <NTag type="info" round>{{ platformLabel }}</NTag>
       </NFormItem>
       <NFormItem :label="t('preferences.appearance')">
         <NSelect v-model:value="form.theme" :options="themeOptions" style="width: 200px" />
       </NFormItem>
+      <NFormItem v-if="isMacOrWin" :label="t('preferences.show-progress-bar')">
+        <NSwitch v-model:value="form.showProgressBar" />
+      </NFormItem>
+
+      <NDivider title-placement="left">{{ t('preferences.window-and-tray') }}</NDivider>
       <NFormItem :label="t('preferences.auto-hide-window')">
         <NSwitch v-model:value="form.autoHideWindow" />
       </NFormItem>
       <NFormItem :label="t('preferences.minimize-to-tray-on-close')">
         <NSwitch v-model:value="form.minimizeToTrayOnClose" />
       </NFormItem>
-      <NFormItem v-if="isMacOrWin" :label="t('preferences.show-progress-bar')">
-        <NSwitch v-model:value="form.showProgressBar" />
-      </NFormItem>
       <NFormItem v-if="isMac" :label="t('preferences.tray-speedometer')">
         <NSwitch v-model:value="form.traySpeedometer" />
       </NFormItem>
       <NFormItem v-if="isMac" :label="t('preferences.dock-badge-speed')">
         <NSwitch v-model:value="form.dockBadgeSpeed" />
-      </NFormItem>
-
-      <NDivider title-placement="left">Language</NDivider>
-      <NFormItem label="Select Language">
-        <NSelect v-model:value="form.locale" :options="localeOptions" style="width: 200px" />
       </NFormItem>
 
       <NDivider title-placement="left">{{ t('preferences.startup') }}</NDivider>

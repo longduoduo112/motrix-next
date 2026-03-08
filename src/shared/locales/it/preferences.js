@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Notifica al completamento',
   'auto-purge-record': 'Cancella record all\'uscita',
   'ui': 'Interfaccia',
+  'appearance-section': 'Aspetto',
+  'window-and-tray': 'Finestra e vassoio',
   'appearance': 'Aspetto',
   'detected-platform': 'Piattaforma rilevata',
   'theme-auto': 'Automatico',

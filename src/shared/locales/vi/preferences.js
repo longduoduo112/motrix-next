@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Thông báo khi hoàn thành',
   'auto-purge-record': 'Xóa bản ghi khi thoát',
   'ui': 'Giao diện',
+  'appearance-section': 'Giao diện',
+  'window-and-tray': 'Cửa sổ & Khay',
   'appearance': 'Giao diện',
   'detected-platform': 'Nền tảng phát hiện',
   'theme-auto': 'Tự động',

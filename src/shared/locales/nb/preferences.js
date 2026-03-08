@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Varsle ved fullført nedlasting',
   'auto-purge-record': 'Fjern oppføringer ved avslutning',
   'ui': 'Grensesnitt',
+  'appearance-section': 'Utseende',
+  'window-and-tray': 'Vindu og systemfelt',
   'appearance': 'Utseende',
   'detected-platform': 'Oppdaget plattform',
   'theme-auto': 'Automatisk',

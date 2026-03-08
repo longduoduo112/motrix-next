@@ -506,6 +506,82 @@ defineExpose({ open })
   margin: 1px 0;
 }
 
+/* ── Table ─────────────────────────────────────────────────────────── */
+.update-notes-text :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+}
+.update-notes-text :deep(th),
+.update-notes-text :deep(td) {
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--m3-on-surface) 12%, transparent);
+  text-align: left;
+}
+.update-notes-text :deep(th) {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--m3-on-surface) 8%, transparent);
+}
+.update-notes-text :deep(tr:nth-child(even)) {
+  background: color-mix(in srgb, var(--m3-on-surface) 4%, transparent);
+}
+
+/* ── Blockquote ────────────────────────────────────────────────────── */
+.update-notes-text :deep(blockquote) {
+  margin: 6px 0;
+  padding: 6px 12px;
+  border-left: 3px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
+  background: color-mix(in srgb, var(--m3-on-surface) 4%, transparent);
+  border-radius: 0 4px 4px 0;
+}
+.update-notes-text :deep(blockquote p) {
+  margin: 2px 0;
+}
+
+/* ── Horizontal rule ───────────────────────────────────────────────── */
+.update-notes-text :deep(hr) {
+  border: none;
+  height: 1px;
+  background: color-mix(in srgb, var(--m3-on-surface) 10%, transparent);
+  margin: 8px 0;
+}
+
+/* ── Inline code & code blocks ─────────────────────────────────────── */
+.update-notes-text :deep(code) {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9em;
+  padding: 1px 5px;
+  background: color-mix(in srgb, var(--m3-on-surface) 10%, transparent);
+  border-radius: 4px;
+}
+.update-notes-text :deep(pre) {
+  margin: 6px 0;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--m3-on-surface) 8%, transparent);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.update-notes-text :deep(pre code) {
+  padding: 0;
+  background: none;
+}
+
+/* ── Links ─────────────────────────────────────────────────────────── */
+.update-notes-text :deep(a) {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.update-notes-text :deep(a:hover) {
+  text-decoration: underline;
+}
+
+/* ── Emphasis ──────────────────────────────────────────────────────── */
+.update-notes-text :deep(strong) {
+  font-weight: 600;
+  color: var(--n-text-color, #eee);
+}
+
 .update-error-detail {
   width: 100%;
   background: var(--m3-error-container-bg);

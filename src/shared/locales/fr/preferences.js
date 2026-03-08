@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Notifier à la fin du téléchargement',
   'auto-purge-record': 'Effacer les enregistrements à la fermeture',
   'ui': 'Interface',
+  'appearance-section': 'Apparence',
+  'window-and-tray': 'Fenêtre et barre',
   'appearance': 'Apparence',
   'detected-platform': 'Plateforme détectée',
   'theme-auto': 'Automatique',

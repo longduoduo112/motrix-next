@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'แจ้งเตือนเมื่อเสร็จ',
   'auto-purge-record': 'ล้างรายการเมื่อปิดโปรแกรม',
   'ui': 'อินเทอร์เฟซ',
+  'appearance-section': 'รูปลักษณ์',
+  'window-and-tray': 'หน้าต่างและถาด',
   'appearance': 'ลักษณะ',
   'detected-platform': 'ตรวจพบแพลตฟอร์ม',
   'theme-auto': 'อัตโนมัติ',

@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': '下载完成后通知',
   'auto-purge-record': '退出时自动清除下载记录',
   'ui': '界面',
+  'appearance-section': '外观',
+  'window-and-tray': '窗口与托盘',
   'appearance': '外观',
   'detected-platform': '检测到的平台',
   'theme-auto': '跟随系统',

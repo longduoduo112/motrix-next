@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Уведомлять о завершении загрузки',
   'auto-purge-record': 'Очищать записи при выходе',
   'ui': 'Интерфейс',
+  'appearance-section': 'Оформление',
+  'window-and-tray': 'Окно и трей',
   'appearance': 'Оформление',
   'detected-platform': 'Обнаруженная платформа',
   'theme-auto': 'Автоматически',

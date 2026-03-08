@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Powiadamiaj po ukończeniu pobierania',
   'auto-purge-record': 'Wyczyść wpisy przy zamykaniu',
   'ui': 'Interfejs',
+  'appearance-section': 'Wygląd',
+  'window-and-tray': 'Okno i zasobnik',
   'appearance': 'Wygląd',
   'detected-platform': 'Wykryta platforma',
   'theme-auto': 'Automatyczny',

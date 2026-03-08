@@ -94,7 +94,7 @@ const taskStatus = computed(() => {
   return translated !== `task.status-${key}` ? translated : key
 })
 const isActive = computed(() => props.task?.status === TASK_STATUS.ACTIVE)
-const taskFullName = computed(() => (props.task ? getTaskName(props.task, { defaultName: 'Unknown', maxLen: -1 }) : ''))
+const taskFullName = computed(() => (props.task ? getTaskName(props.task, { defaultName: 'Unknown' }) : ''))
 const percent = computed(() => (props.task ? calcProgress(props.task.totalLength, props.task.completedLength) : 0))
 
 const remaining = computed(() => {

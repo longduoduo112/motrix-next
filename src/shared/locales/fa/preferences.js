@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'اطلاع‌رسانی هنگام تکمیل',
   'auto-purge-record': 'پاک کردن رکوردها هنگام خروج',
   'ui': 'رابط کاربری',
+  'appearance-section': 'ظاهر',
+  'window-and-tray': 'پنجره و سینی',
   'appearance': 'ظاهر',
   'detected-platform': 'پلتفرم شناسایی‌شده',
   'theme-auto': 'خودکار',

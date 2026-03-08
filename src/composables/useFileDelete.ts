@@ -63,7 +63,7 @@ export async function deleteTaskFiles(task: Aria2Task): Promise<void> {
 
   // Only remove the task directory if it exists and is now empty
   if (dir) {
-    const name = getTaskName(task, { defaultName: '', maxLen: -1 })
+    const name = getTaskName(task, { defaultName: '' })
     if (name) {
       const taskDir = await join(dir, name)
       await removeIfEmpty(taskDir)

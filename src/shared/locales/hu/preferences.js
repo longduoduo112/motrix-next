@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Értesítés befejezéskor',
   'auto-purge-record': 'Bejegyzések törlése kilépéskor',
   'ui': 'Felület',
+  'appearance-section': 'Megjelenés',
+  'window-and-tray': 'Ablak és tálca',
   'appearance': 'Megjelenés',
   'detected-platform': 'Felismert platform',
   'theme-auto': 'Automatikus',

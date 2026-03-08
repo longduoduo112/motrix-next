@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Tamamlandığında bildir',
   'auto-purge-record': 'Çıkışta kayıtları temizle',
   'ui': 'Arayüz',
+  'appearance-section': 'Görünüm',
+  'window-and-tray': 'Pencere ve Tepsi',
   'appearance': 'Görünüm',
   'detected-platform': 'Algılanan platform',
   'theme-auto': 'Otomatik',

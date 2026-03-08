@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Beri tahu saat selesai',
   'auto-purge-record': 'Hapus catatan saat keluar',
   'ui': 'Antarmuka',
+  'appearance-section': 'Tampilan',
+  'window-and-tray': 'Jendela & Baki',
   'appearance': 'Tampilan',
   'detected-platform': 'Platform terdeteksi',
   'theme-auto': 'Otomatis',

@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Notificar en completar la descàrrega',
   'auto-purge-record': 'Esborrar registres en sortir',
   'ui': 'Interfície',
+  'appearance-section': 'Aparença',
+  'window-and-tray': 'Finestra i safata',
   'appearance': 'Aparença',
   'detected-platform': 'Plataforma detectada',
   'theme-auto': 'Automàtic',

@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Уведоми при завършване',
   'auto-purge-record': 'Изчисти записите при затваряне',
   'ui': 'Интерфейс',
+  'appearance-section': 'Облик',
+  'window-and-tray': 'Прозорец и лента',
   'appearance': 'Облик',
   'detected-platform': 'Разпозната платформа',
   'theme-auto': 'Автоматично',

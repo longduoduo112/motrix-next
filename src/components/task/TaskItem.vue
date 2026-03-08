@@ -42,9 +42,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const taskFullName = computed(() =>
-  getTaskName(props.task, { defaultName: t('task.get-task-name') || 'Unknown', maxLen: -1 }),
-)
+const taskFullName = computed(() => getTaskName(props.task, { defaultName: t('task.get-task-name') || 'Unknown' }))
 
 const isSeeder = computed(() => checkTaskIsSeeder(props.task))
 const isBT = computed(() => checkTaskIsBT(props.task))

@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Notificar al completar descarga',
   'auto-purge-record': 'Borrar registros al salir',
   'ui': 'Interfaz',
+  'appearance-section': 'Apariencia',
+  'window-and-tray': 'Ventana y bandeja',
   'appearance': 'Apariencia',
   'detected-platform': 'Plataforma detectada',
   'theme-auto': 'Automático',

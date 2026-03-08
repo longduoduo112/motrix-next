@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'ダウンロード完了時に通知',
   'auto-purge-record': '終了時にダウンロード記録を自動消去',
   'ui': 'インターフェース',
+  'appearance-section': '外観',
+  'window-and-tray': 'ウィンドウとトレイ',
   'appearance': '外観',
   'detected-platform': '検出されたプラットフォーム',
   'theme-auto': '自動',

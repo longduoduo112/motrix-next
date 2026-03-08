@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Notify on download completion',
   'auto-purge-record': 'Clear download records on exit',
   'ui': 'Interface',
+  'appearance-section': 'Appearance',
+  'window-and-tray': 'Window & Tray',
   'appearance': 'Appearance',
   'detected-platform': 'Detected Platform',
   'theme-auto': 'Auto',

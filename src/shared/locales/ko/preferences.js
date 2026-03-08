@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': '다운로드 완료 시 알림',
   'auto-purge-record': '종료 시 다운로드 기록 자동 삭제',
   'ui': '인터페이스',
+  'appearance-section': '외관',
+  'window-and-tray': '창 및 트레이',
   'appearance': '외관',
   'detected-platform': '감지된 플랫폼',
   'theme-auto': '자동',

@@ -115,13 +115,13 @@ describe('getTaskName', () => {
     expect(getTaskName(task, { defaultName: 'N/A' })).toBe('N/A')
   })
 
-  it('truncates long BT names with ellipsis', () => {
+  it('returns full-length BT names without truncation', () => {
     const task = createMockTask({
       files: [createMockFile()],
       bittorrent: { info: { name: 'A'.repeat(100) } },
     })
-    const result = getTaskName(task, { maxLen: 10 })
-    expect(result).toBe('A'.repeat(10) + '...')
+    const result = getTaskName(task)
+    expect(result).toBe('A'.repeat(100))
   })
 })
 

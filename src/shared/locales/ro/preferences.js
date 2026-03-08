@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Notifică la finalizare',
   'auto-purge-record': 'Curăță înregistrările la ieșire',
   'ui': 'Interfață',
+  'appearance-section': 'Aspect',
+  'window-and-tray': 'Fereastră și tavă',
   'appearance': 'Aspect',
   'detected-platform': 'Platformă detectată',
   'theme-auto': 'Automat',

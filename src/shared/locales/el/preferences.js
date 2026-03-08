@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Ειδοποίηση κατά την ολοκλήρωση',
   'auto-purge-record': 'Εκκαθάριση εγγραφών κατά την έξοδο',
   'ui': 'Διεπαφή',
+  'appearance-section': 'Εμφάνιση',
+  'window-and-tray': 'Παράθυρο & Δίσκος',
   'appearance': 'Εμφάνιση',
   'detected-platform': 'Ανιχνευμένη πλατφόρμα',
   'theme-auto': 'Αυτόματο',

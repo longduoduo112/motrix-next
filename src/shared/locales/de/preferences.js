@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'Bei Abschluss benachrichtigen',
   'auto-purge-record': 'Einträge beim Beenden löschen',
   'ui': 'Oberfläche',
+  'appearance-section': 'Darstellung',
+  'window-and-tray': 'Fenster & Tray',
   'appearance': 'Erscheinungsbild',
   'detected-platform': 'Erkannte Plattform',
   'theme-auto': 'Automatisch',

@@ -33,6 +33,8 @@ export default {
   'task-completed-notify': 'الإشعار عند الاكتمال',
   'auto-purge-record': 'مسح السجلات عند الخروج',
   'ui': 'الواجهة',
+  'appearance-section': 'المظهر',
+  'window-and-tray': 'النافذة وشريط النظام',
   'appearance': 'المظهر',
   'detected-platform': 'المنصة المكتشفة',
   'theme-auto': 'تلقائي',
