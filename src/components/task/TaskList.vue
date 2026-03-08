@@ -21,7 +21,7 @@ const emit = defineEmits<{
 
 const taskStore = useTaskStore()
 const { isDark } = useTheme()
-const watermarkSrc = computed(() => isDark.value ? watermarkLight : watermarkDark)
+const watermarkSrc = computed(() => (isDark.value ? watermarkLight : watermarkDark))
 
 const mounted = ref(false)
 const taskList = ref<Aria2Task[]>([])
@@ -34,9 +34,12 @@ onMounted(() => {
   })
 })
 
-watch(() => taskStore.taskList, (v) => {
-  if (mounted.value) taskList.value = v
-})
+watch(
+  () => taskStore.taskList,
+  (v) => {
+    if (mounted.value) taskList.value = v
+  },
+)
 
 function isSelected(gid: string) {
   return selectedGidList.value.includes(gid)
@@ -81,9 +84,9 @@ function handleItemClick(task: Aria2Task, event: MouseEvent) {
       </div>
     </TransitionGroup>
     <Transition name="fade">
-      <div v-if="mounted && taskList.length === 0" class="no-task">
+      <div v-if="mounted && taskList.length === 0" class="no-task" @dragstart.prevent @selectstart.prevent>
         <div class="no-task-inner">
-          <img :src="watermarkSrc" alt="Motrix Next" class="no-task-brand" />
+          <img :src="watermarkSrc" alt="Motrix Next" class="no-task-brand" draggable="false" />
         </div>
       </div>
     </Transition>
@@ -142,9 +145,17 @@ function handleItemClick(task: Aria2Task, event: MouseEvent) {
   max-width: 480px;
   width: 80%;
   opacity: 0.35;
-  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
-.fade-enter-active { transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1); }
-.fade-leave-active { transition: opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15); }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active {
+  transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+.fade-leave-active {
+  transition: opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
