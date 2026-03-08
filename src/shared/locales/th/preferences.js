@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'ดาวน์โหลดเนื้อหา torrent อัตโนมัติหลังเสร็จ',
   'not-saved': 'ยังไม่ได้บันทึก',
   'not-saved-confirm': 'การเปลี่ยนแปลงที่ไม่ได้บันทึกจะหายไป ออกเลยหรือไม่?',
+  'save-and-leave': 'บันทึกและออก',
+  'leave-without-saving': 'ไม่บันทึก',
   'rpc-secret-empty-warning': 'คีย์ RPC จำเป็นเพื่อความปลอดภัย',
   'update-available-title': 'มีอัปเดต',
   'update-and-install': 'ดาวน์โหลดและติดตั้ง',

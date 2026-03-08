@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Αυτόματη λήψη περιεχομένου torrent μετά την ολοκλήρωση',
   'not-saved': 'Μη αποθηκευμένες αλλαγές',
   'not-saved-confirm': 'Οι μη αποθηκευμένες αλλαγές θα χαθούν. Έξοδος;',
+  'save-and-leave': 'Αποθήκευση & Έξοδος',
+  'leave-without-saving': 'Χωρίς αποθήκευση',
   'rpc-secret-empty-warning': 'Το μυστικό RPC είναι υποχρεωτικό για ασφάλεια',
   'update-available-title': 'Ενημέρωση διαθέσιμη',
   'update-and-install': 'Λήψη και εγκατάσταση',

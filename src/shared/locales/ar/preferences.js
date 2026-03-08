@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'تنزيل محتوى torrent تلقائيًا بعد الاكتمال',
   'not-saved': 'تغييرات غير محفوظة',
   'not-saved-confirm': 'ستُفقد التغييرات غير المحفوظة. الخروج على أي حال؟',
+  'save-and-leave': 'حفظ والخروج',
+  'leave-without-saving': 'بدون حفظ',
   'rpc-secret-empty-warning': 'مفتاح RPC مطلوب لأسباب أمنية',
   'update-available-title': 'تحديث متاح',
   'update-and-install': 'تنزيل وتثبيت',

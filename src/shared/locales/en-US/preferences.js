@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Auto-download torrent content after completion',
   'not-saved': 'Unsaved Changes',
   'not-saved-confirm': 'Unsaved changes will be lost. Leave anyway?',
+  'save-and-leave': 'Save & Leave',
+  'leave-without-saving': 'Don\'t Save',
   'rpc-secret-empty-warning': 'RPC Secret is required for security',
   'update-available-title': 'Update Available',
   'update-and-install': 'Download & Install',

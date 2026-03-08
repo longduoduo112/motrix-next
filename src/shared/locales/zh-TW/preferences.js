@@ -106,6 +106,8 @@ export default {
   'follow-torrent': '種子下載後自動下載其內容',
   'not-saved': '設定未儲存',
   'not-saved-confirm': '未儲存的變更將遺失，確定離開嗎？',
+  'save-and-leave': '儲存並離開',
+  'leave-without-saving': '不儲存',
   'rpc-secret-empty-warning': 'RPC 密鑰不可為空，這是安全性必要項目',
   'update-available-title': '發現新版本',
   'update-and-install': '下載並安裝',

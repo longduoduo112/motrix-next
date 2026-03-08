@@ -104,14 +104,18 @@ onMounted(async () => {
         navDialog.warning({
           title: t('preferences.not-saved'),
           content: t('preferences.not-saved-confirm'),
-          positiveText: t('app.yes'),
-          negativeText: t('app.no'),
+          positiveText: t('preferences.save-and-leave'),
+          negativeText: t('preferences.leave-without-saving'),
           onPositiveClick: () => {
+            if (preferenceStore.saveBeforeLeave) {
+              preferenceStore.saveBeforeLeave()
+            }
             preferenceStore.pendingChanges = false
             resolve(true)
           },
           onNegativeClick: () => {
-            resolve(false)
+            preferenceStore.pendingChanges = false
+            resolve(true)
           },
           onClose: () => {
             resolve(false)

@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Torrent-inhoud automatisch downloaden na voltooiing',
   'not-saved': 'Niet-opgeslagen wijzigingen',
   'not-saved-confirm': 'Niet-opgeslagen wijzigingen gaan verloren. Toch verlaten?',
+  'save-and-leave': 'Opslaan & Verlaten',
+  'leave-without-saving': 'Niet opslaan',
   'rpc-secret-empty-warning': 'RPC-geheim is vereist voor beveiliging',
   'update-available-title': 'Update beschikbaar',
   'update-and-install': 'Downloaden en installeren',

@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Tamamlandıktan sonra torrent içeriğini otomatik indir',
   'not-saved': 'Kaydedilmemiş değişiklikler',
   'not-saved-confirm': 'Kaydedilmemiş değişiklikler kaybolacak. Yine de çıkılsın mı?',
+  'save-and-leave': 'Kaydet ve Çık',
+  'leave-without-saving': 'Kaydetme',
   'rpc-secret-empty-warning': 'RPC anahtarı güvenlik için zorunludur',
   'update-available-title': 'Güncelleme mevcut',
   'update-and-install': 'İndir ve kur',

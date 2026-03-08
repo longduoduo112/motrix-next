@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Last ned torrent-innhold automatisk etter fullføring',
   'not-saved': 'Ulagrede endringer',
   'not-saved-confirm': 'Ulagrede endringer vil gå tapt. Avslutte likevel?',
+  'save-and-leave': 'Lagre og forlat',
+  'leave-without-saving': 'Ikke lagre',
   'rpc-secret-empty-warning': 'RPC-hemmelighet er påkrevd for sikkerhet',
   'update-available-title': 'Oppdatering tilgjengelig',
   'update-and-install': 'Last ned og installer',

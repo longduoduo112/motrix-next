@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Torrent tartalom automatikus letöltése befejezés után',
   'not-saved': 'Mentetlen változtatások',
   'not-saved-confirm': 'A mentetlen változtatások elvesznek. Kilép mégis?',
+  'save-and-leave': 'Mentés és kilépés',
+  'leave-without-saving': 'Nem mentem',
   'rpc-secret-empty-warning': 'Az RPC titok biztonsági okokból kötelező',
   'update-available-title': 'Frissítés elérhető',
   'update-and-install': 'Letöltés és telepítés',

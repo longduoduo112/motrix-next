@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Unduh konten torrent secara otomatis setelah selesai',
   'not-saved': 'Perubahan belum disimpan',
   'not-saved-confirm': 'Perubahan yang belum disimpan akan hilang. Tetap keluar?',
+  'save-and-leave': 'Simpan & Keluar',
+  'leave-without-saving': 'Jangan Simpan',
   'rpc-secret-empty-warning': 'Kunci RPC wajib untuk keamanan',
   'update-available-title': 'Pembaruan tersedia',
   'update-and-install': 'Unduh dan pasang',

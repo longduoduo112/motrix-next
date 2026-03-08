@@ -14,6 +14,8 @@ const STORE_KEY = 'preferences'
 export const usePreferenceStore = defineStore('preference', () => {
   const engineMode = ref('MAX')
   const pendingChanges = ref(false)
+  /** Callback registered by the active preference page to save before navigation. */
+  const saveBeforeLeave = ref<(() => void) | null>(null)
   const config = ref<AppConfig>({ theme: 'dark', locale: 'en-US' } as AppConfig)
 
   const theme = computed(() => config.value.theme)
@@ -128,6 +130,7 @@ export const usePreferenceStore = defineStore('preference', () => {
   return {
     engineMode,
     pendingChanges,
+    saveBeforeLeave,
     config,
     theme,
     locale,

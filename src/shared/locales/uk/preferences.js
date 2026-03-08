@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Автоматично завантажувати вміст torrent після завершення',
   'not-saved': 'Незбережені зміни',
   'not-saved-confirm': 'Незбережені зміни буде втрачено. Все одно вийти?',
+  'save-and-leave': 'Зберегти й вийти',
+  'leave-without-saving': 'Не зберігати',
   'rpc-secret-empty-warning': 'Секрет RPC обов\'язковий для безпеки',
   'update-available-title': 'Доступне оновлення',
   'update-and-install': 'Завантажити і встановити',

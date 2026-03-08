@@ -360,3 +360,10 @@ All fast checks must pass with zero errors before any PR or release.
 This project uses the **Superpowers** skill framework (`~/.claude/skills/using-superpowers/SKILL.md`). It enforces a discipline where AI agents **must invoke relevant skills before any action** — planning, debugging, implementing, or reviewing.
 
 **Read the skill file before starting any work.** It contains the full workflow, skill priority rules, and the complete list of available skills.
+
+---
+
+## J. Testing Constraints
+
+> **DO NOT use browser tools (Playwright, browser subagent, etc.) to test this app.** Tauri renders in a native webview — `localhost:1420` in a browser lacks IPC, tray, and sidecar access. Use CLI checks (`vue-tsc`, `pnpm test`, `cargo test`) or ask the user to verify UI via `pnpm tauri dev`.
+

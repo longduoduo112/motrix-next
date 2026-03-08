@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Torrent-Inhalte nach Abschluss automatisch herunterladen',
   'not-saved': 'Ungespeicherte Änderungen',
   'not-saved-confirm': 'Ungespeicherte Änderungen gehen verloren. Trotzdem verlassen?',
+  'save-and-leave': 'Speichern & Verlassen',
+  'leave-without-saving': 'Nicht speichern',
   'rpc-secret-empty-warning': 'RPC-Schlüssel ist aus Sicherheitsgründen erforderlich',
   'update-available-title': 'Update verfügbar',
   'update-and-install': 'Herunterladen und installieren',

@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Descarcă automat conținutul torrent după finalizare',
   'not-saved': 'Modificări nesalvate',
   'not-saved-confirm': 'Modificările nesalvate vor fi pierdute. Ieșiți oricum?',
+  'save-and-leave': 'Salvează și ieși',
+  'leave-without-saving': 'Nu salva',
   'rpc-secret-empty-warning': 'Secretul RPC este obligatoriu pentru securitate',
   'update-available-title': 'Actualizare disponibilă',
   'update-and-install': 'Descarcă și instalează',

@@ -106,6 +106,8 @@ export default {
   'follow-torrent': '种子下载后自动下载其内容',
   'not-saved': '设置未保存',
   'not-saved-confirm': '未保存的更改将丢失，确定离开吗？',
+  'save-and-leave': '保存并离开',
+  'leave-without-saving': '不保存',
   'rpc-secret-empty-warning': 'RPC 密钥不能为空，这是安全必须项',
   'update-available-title': '发现新版本',
   'update-and-install': '下载并安装',

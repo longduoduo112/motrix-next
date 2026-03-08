@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Descarregar automàticament el contingut torrent després de completar-se',
   'not-saved': 'Canvis sense desar',
   'not-saved-confirm': 'Els canvis sense desar es perdran. Sortir igualment?',
+  'save-and-leave': 'Desa i surt',
+  'leave-without-saving': 'No desis',
   'rpc-secret-empty-warning': 'El secret RPC és obligatori per seguretat',
   'update-available-title': 'Actualització disponible',
   'update-and-install': 'Descarregar i instal·lar',

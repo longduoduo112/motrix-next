@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'دانلود خودکار محتوای torrent پس از تکمیل',
   'not-saved': 'تغییرات ذخیره نشده',
   'not-saved-confirm': 'تغییرات ذخیره نشده از بین خواهند رفت. خارج شوید؟',
+  'save-and-leave': 'ذخیره و خروج',
+  'leave-without-saving': 'بدون ذخیره',
   'rpc-secret-empty-warning': 'کلید RPC برای امنیت الزامی است',
   'update-available-title': 'به‌روزرسانی موجود است',
   'update-and-install': 'دانلود و نصب',

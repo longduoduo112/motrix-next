@@ -106,7 +106,11 @@ const isDirty = computed(() => !isEqual(JSON.parse(JSON.stringify(form.value)), 
 watchSyncEffect(() => {
   preferenceStore.pendingChanges = isDirty.value
 })
+onMounted(() => {
+  preferenceStore.saveBeforeLeave = handleSave
+})
 onUnmounted(() => {
+  preferenceStore.saveBeforeLeave = null
   preferenceStore.pendingChanges = false
 })
 

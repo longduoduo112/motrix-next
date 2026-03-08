@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Tự động tải nội dung torrent sau khi hoàn thành',
   'not-saved': 'Thay đổi chưa lưu',
   'not-saved-confirm': 'Thay đổi chưa lưu sẽ bị mất. Vẫn thoát?',
+  'save-and-leave': 'Lưu & Rời đi',
+  'leave-without-saving': 'Không lưu',
   'rpc-secret-empty-warning': 'Khóa RPC bắt buộc vì lý do bảo mật',
   'update-available-title': 'Có bản cập nhật',
   'update-and-install': 'Tải và cài đặt',

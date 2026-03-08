@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'Automatycznie pobieraj zawartość torrent po ukończeniu',
   'not-saved': 'Niezapisane zmiany',
   'not-saved-confirm': 'Niezapisane zmiany zostaną utracone. Wyjść mimo to?',
+  'save-and-leave': 'Zapisz i wyjdź',
+  'leave-without-saving': 'Nie zapisuj',
   'rpc-secret-empty-warning': 'Sekret RPC jest wymagany ze względów bezpieczeństwa',
   'update-available-title': 'Dostępna aktualizacja',
   'update-and-install': 'Pobierz i zainstaluj',

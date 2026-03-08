@@ -106,6 +106,8 @@ export default {
   'follow-torrent': '토렌트 완료 후 콘텐츠 자동 다운로드',
   'not-saved': '저장되지 않은 변경',
   'not-saved-confirm': '저장되지 않은 변경 사항이 손실됩니다. 나가시겠습니까?',
+  'save-and-leave': '저장 후 나가기',
+  'leave-without-saving': '저장하지 않기',
   'rpc-secret-empty-warning': '보안을 위해 RPC 비밀키는 필수입니다',
   'update-available-title': '업데이트 사용 가능',
   'update-and-install': '다운로드 및 설치',

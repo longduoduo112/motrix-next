@@ -106,6 +106,8 @@ export default {
   'follow-torrent': 'トレント完了後にコンテンツを自動ダウンロード',
   'not-saved': '未保存の変更',
   'not-saved-confirm': '未保存の変更は失われます。このまま離れますか？',
+  'save-and-leave': '保存して離れる',
+  'leave-without-saving': '保存しない',
   'rpc-secret-empty-warning': 'セキュリティのため RPC シークレットは必須です',
   'update-available-title': 'アップデートがあります',
   'update-and-install': 'ダウンロードしてインストール',
