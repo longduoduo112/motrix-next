@@ -4,7 +4,7 @@ import { MESSAGE_DURATION } from '@shared/timing'
 import { ellipsis } from '@shared/utils/format'
 
 /** Maximum display length for toast notification content. */
-const TOAST_MAX_LENGTH = 64
+const TOAST_MAX_LENGTH = 48
 
 const DEFAULTS: MessageOptions = {
   closable: true,
