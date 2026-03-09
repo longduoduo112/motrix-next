@@ -290,13 +290,17 @@ function handleSessionReset() {
     negativeText: t('app.no'),
     onPositiveClick: async () => {
       try {
-        // Pause all tasks first so aria2 stops writing to the session file.
-        await taskStore.pauseAllTask()
+        // Force-remove all tasks from aria2's in-memory queue.
+        // Without this, paused/active tasks stay in memory and the
+        // 10-second save-session-interval writes them back to disk.
+        const allGids = taskStore.taskList.map((t) => t.gid)
+        if (allGids.length > 0) {
+          await taskStore.batchRemoveTask(allGids)
+        }
+        // Purge any remaining stopped download results from aria2.
         await taskStore.purgeTaskRecord()
+        // Delete the session file itself.
         await invoke('clear_session_file')
-        // Force aria2 to save its now-empty state, preventing the
-        // 10-second save-session-interval from resurrecting old tasks.
-        await taskStore.saveSession()
         message.success(t('preferences.session-reset'))
       } catch (e) {
         logger.error('Advanced.sessionReset', e)

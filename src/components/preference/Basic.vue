@@ -304,8 +304,8 @@ onMounted(async () => {
             v-model:value="form.updateChannel"
             size="small"
             @update:value="
-              (v: string) => {
-                preferenceStore.updateAndSave({ updateChannel: v as 'stable' | 'beta' })
+              async (v: string) => {
+                await preferenceStore.updateAndSave({ updateChannel: v as 'stable' | 'beta' })
                 // Only sync updateChannel in the snapshot — preserve dirty state
                 // for other unsaved fields (download dir, speed limits, etc.).
                 patchSnapshot({ updateChannel: v } as Partial<typeof form.value>)
