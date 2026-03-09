@@ -125,6 +125,10 @@ watch(
     if (!visible) return
     if (appStore.droppedTorrentPaths.length > 0) {
       await loadDroppedFile(appStore.droppedTorrentPaths[0])
+      // Auto-submit remaining files in background
+      for (let i = 1; i < appStore.droppedTorrentPaths.length; i++) {
+        autoSubmitFile(appStore.droppedTorrentPaths[i])
+      }
       return
     }
     if (activeTab.value === ADD_TASK_TYPE.URI && !form.value.uris) {
@@ -151,6 +155,9 @@ watch(
   async (paths) => {
     if (paths.length > 0 && props.show) {
       await loadDroppedFile(paths[0])
+      for (let i = 1; i < paths.length; i++) {
+        autoSubmitFile(paths[i])
+      }
     }
   },
 )
@@ -194,6 +201,29 @@ async function loadTorrentFromPath(filePath: string) {
     await parseTorrentData(uint8)
   } catch (e) {
     logger.error('AddTask.loadTorrentFromPath', e)
+  }
+}
+
+/**
+ * Auto-submits a file (torrent or metalink) without user interaction.
+ * Used for batch file imports where only the first file gets the
+ * interactive dialog and remaining files are submitted directly.
+ */
+async function autoSubmitFile(filePath: string) {
+  try {
+    const lower = filePath.toLowerCase()
+    const bytes = await readFile(filePath)
+    const uint8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
+    const base64 = uint8ToBase64(uint8)
+    const options: Record<string, string> = { dir: form.value.dir }
+
+    if (lower.endsWith('.metalink') || lower.endsWith('.meta4')) {
+      await taskStore.addMetalink({ metalink: base64, options })
+    } else {
+      await taskStore.addTorrent({ torrent: base64, options })
+    }
+  } catch (e) {
+    logger.error('AddTask.autoSubmitFile', e)
   }
 }
 
@@ -260,10 +290,17 @@ async function chooseDirectory() {
 async function chooseTorrentFile() {
   try {
     const selected = await openDialog({
-      multiple: false,
+      multiple: true,
       filters: [{ name: 'Torrent / Metalink', extensions: ['torrent', 'metalink', 'meta4'] }],
     })
-    if (typeof selected === 'string') await loadDroppedFile(selected)
+    if (typeof selected === 'string') {
+      await loadDroppedFile(selected)
+    } else if (Array.isArray(selected) && selected.length > 0) {
+      await loadDroppedFile(selected[0])
+      for (let i = 1; i < selected.length; i++) {
+        autoSubmitFile(selected[i])
+      }
+    }
   } catch (e) {
     logger.debug('AddTask.chooseTorrentFile', e)
   }

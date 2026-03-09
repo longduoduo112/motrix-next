@@ -185,12 +185,16 @@ export const useAppStore = defineStore('app', () => {
       }
     }
 
-    // File-based inputs take priority — open dialog with all collected paths
+    // Process file-based and URI-based inputs independently
     if (filePaths.length > 0) {
       showAddTaskDialog(ADD_TASK_TYPE.TORRENT, filePaths)
-    } else if (uriLines.length > 0) {
+    }
+    if (uriLines.length > 0) {
       addTaskUrl.value = uriLines.join('\n')
-      showAddTaskDialog(ADD_TASK_TYPE.URI)
+      // Only open URI dialog if no file dialog was opened
+      if (filePaths.length === 0) {
+        showAddTaskDialog(ADD_TASK_TYPE.URI)
+      }
     }
   }
 
