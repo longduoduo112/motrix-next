@@ -122,7 +122,12 @@ preferenceStore.loadPreference().then(async () => {
       logger.debug('main.locale', e)
       locale = 'en-US'
     }
-    preferenceStore.updateAndSave({ locale })
+    // Update config reactively FIRST (synchronous), then persist to disk (async).
+    // updateAndSave() delays config.value assignment until after file I/O,
+    // which causes a race: components that mount before the save completes
+    // would read stale '' locale and fall back to 'en-US'.
+    preferenceStore.updatePreference({ locale })
+    preferenceStore.savePreference()
   }
   if (locale && i18n.global.locale) {
     setI18nLocale(i18n, locale)

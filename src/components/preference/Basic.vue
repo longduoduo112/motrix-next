@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** @fileoverview Basic preference form: theme, locale, download dir, speed limits. */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePreferenceStore } from '@/stores/preference'
 import { usePreferenceForm } from '@/composables/usePreferenceForm'
@@ -68,7 +68,7 @@ function buildForm() {
     lastCheckUpdateTime: config.lastCheckUpdateTime || 0,
     updateChannel: config.updateChannel || 'stable',
     dir: config.dir || defaultDownloadDir.value,
-    locale: config.locale ?? 'en-US',
+    locale: config.locale || 'en-US',
     theme: config.theme ?? 'auto',
     openAtLogin: !!config.openAtLogin,
     keepWindowState: !!config.keepWindowState,
@@ -155,6 +155,21 @@ const { form, isDirty, handleSave, handleReset, resetSnapshot, patchSnapshot } =
     }
   },
 })
+
+// One-shot sync: if async OS locale detection completes after mount, patch the form.
+// On first launch (no config.json), buildForm() snapshots locale as 'en-US' (fallback)
+// because main.ts hasn't finished getLocale() yet. When detection completes and
+// updateAndSave() writes the real locale, this watcher patches the dropdown once.
+const stopLocaleSync = watch(
+  () => preferenceStore.config.locale,
+  (detected) => {
+    if (detected && form.value.locale === 'en-US' && detected !== 'en-US') {
+      form.value.locale = detected
+      patchSnapshot({ locale: detected } as Partial<typeof form.value>)
+      stopLocaleSync()
+    }
+  },
+)
 
 const uploadSpeedValue = ref(0)
 const uploadUnit = ref('K')
