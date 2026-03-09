@@ -241,13 +241,6 @@ async function chooseTorrentFile() {
   }
 }
 
-function clearTorrent() {
-  if (selectedItem.value) {
-    appStore.pendingBatch = batch.value.filter((i) => i !== selectedItem.value)
-    selectedBatchIndex.value = Math.min(selectedBatchIndex.value, Math.max(0, fileItems.value.length - 1))
-  }
-}
-
 function removeBatchItem(item: BatchItem) {
   appStore.pendingBatch = batch.value.filter((i) => i !== item)
   selectedBatchIndex.value = Math.min(selectedBatchIndex.value, Math.max(0, fileItems.value.length - 1))
@@ -429,39 +422,39 @@ function kindTagType(kind: string): 'info' | 'success' | 'warning' {
           </NTabPane>
           <NTabPane :name="ADD_TASK_TYPE.TORRENT" :tab="t('task.torrent-task') || 'Torrent'">
             <div class="tab-pane-content">
-              <!-- Batch list when multiple file items -->
-              <div v-if="fileItems.length > 1" class="batch-list">
-                <TransitionGroup name="batch-item-list" tag="div">
-                  <div
-                    v-for="(item, idx) in fileItems"
-                    :key="item.id"
-                    class="batch-item"
-                    :class="{ 'batch-item-selected': idx === selectedBatchIndex }"
-                    @click="selectedBatchIndex = idx"
-                  >
-                    <div class="batch-item-main">
-                      <NEllipsis :style="{ maxWidth: '400px', flex: 1 }">{{ item.displayName }}</NEllipsis>
-                      <NSpace :size="4" align="center" :wrap="false">
-                        <NTag :type="kindTagType(item.kind)" size="small" :bordered="false">
-                          {{ item.kind === 'metalink' ? 'Metalink' : 'Torrent' }}
-                        </NTag>
-                        <NTag v-if="item.status === 'failed'" type="error" size="small" :bordered="false">✕</NTag>
-                        <NButton quaternary size="tiny" @click.stop="removeBatchItem(item)">✕</NButton>
-                      </NSpace>
+              <!-- Batch list for file items -->
+              <Transition name="batch-fade">
+                <div v-if="fileItems.length > 0" class="batch-list">
+                  <TransitionGroup name="batch-item-list" tag="div">
+                    <div
+                      v-for="(item, idx) in fileItems"
+                      :key="item.id"
+                      class="batch-item"
+                      :class="{ 'batch-item-selected': idx === selectedBatchIndex }"
+                      @click="selectedBatchIndex = idx"
+                    >
+                      <div class="batch-item-main">
+                        <NEllipsis :style="{ maxWidth: '400px', flex: 1 }">{{ item.displayName }}</NEllipsis>
+                        <NSpace :size="4" align="center" :wrap="false">
+                          <NTag :type="kindTagType(item.kind)" size="small" :bordered="false">
+                            {{ item.kind === 'metalink' ? 'Metalink' : 'Torrent' }}
+                          </NTag>
+                          <NTag v-if="item.status === 'failed'" type="error" size="small" :bordered="false">✕</NTag>
+                          <NButton quaternary size="tiny" @click.stop="removeBatchItem(item)">✕</NButton>
+                        </NSpace>
+                      </div>
+                      <div v-if="item.error" class="batch-item-error">{{ item.error }}</div>
                     </div>
-                    <div v-if="item.error" class="batch-item-error">{{ item.error }}</div>
-                  </div>
-                </TransitionGroup>
-              </div>
+                  </TransitionGroup>
+                </div>
+              </Transition>
 
               <!-- Single torrent detail / upload area -->
               <Transition name="batch-fade" mode="out-in">
                 <TorrentUpload
                   :key="selectedItem?.id || 'empty'"
                   :loaded="!!selectedItem && selectedItem.payload !== selectedItem.source"
-                  :name="selectedItem?.displayName || ''"
                   @choose="chooseTorrentFile"
-                  @clear="clearTorrent"
                 >
                   <template #file-list>
                     <div
@@ -479,9 +472,9 @@ function kindTagType(kind: string): 'info' | 'success' | 'warning' {
                       />
                     </div>
                   </template>
-                  <template #placeholder>{{
-                    t('task.select-torrent') || 'Drag torrent here or click to select'
-                  }}</template>
+                  <template #placeholder>
+                    {{ t('task.select-torrent') || 'Drag torrent here or click to select' }}
+                  </template>
                 </TorrentUpload>
               </Transition>
             </div>
@@ -517,7 +510,6 @@ function kindTagType(kind: string): 'info' | 'success' | 'warning' {
             v-model:referer="form.referer"
             v-model:cookie="form.cookie"
             v-model:all-proxy="form.allProxy"
-            v-model:new-task-show-downloading="form.newTaskShowDownloading"
           />
         </div>
       </NForm>
@@ -541,63 +533,9 @@ function kindTagType(kind: string): 'info' | 'success' | 'warning' {
   min-height: 160px;
 }
 
-/* Tab slide animation for shared bottom form */
-.tab-slide-left-enter-active,
-.tab-slide-left-leave-active,
-.tab-slide-right-enter-active,
-.tab-slide-right-leave-active {
-  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-}
-.tab-slide-left-enter-from {
-  opacity: 0;
-  transform: translateX(30px);
-}
-.tab-slide-left-leave-to {
-  opacity: 0;
-  transform: translateX(-30px);
-}
-.tab-slide-right-enter-from {
-  opacity: 0;
-  transform: translateX(-30px);
-}
-.tab-slide-right-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-
-/* M3 crossfade for batch item switching */
-.batch-fade-enter-active {
-  transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1);
-}
-.batch-fade-leave-active {
-  transition: opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
-}
-.batch-fade-enter-from,
-.batch-fade-leave-to {
-  opacity: 0;
-}
-
-/* TransitionGroup for batch item add/remove */
-.batch-item-list-enter-active {
-  transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1);
-}
-.batch-item-list-leave-active {
-  transition: opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
-}
-.batch-item-list-enter-from,
-.batch-item-list-leave-to {
-  opacity: 0;
-}
-.batch-item-list-move {
-  transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1);
-}
-.batch-item-list-leave-active {
-  position: absolute;
-  width: 100%;
-}
-
 /* Batch item list */
 .batch-list {
+  position: relative;
   margin-bottom: 8px;
   border-radius: 6px;
   border: 1px solid var(--n-border-color, rgba(255, 255, 255, 0.09));
@@ -627,5 +565,67 @@ function kindTagType(kind: string): 'info' | 'success' | 'warning' {
   color: var(--n-text-color-error, #e88080);
   font-size: 12px;
   margin-top: 4px;
+}
+</style>
+
+<!-- Non-scoped: Vue Transition/TransitionGroup classes must NOT be scoped -->
+<style>
+/* Tab slide animation */
+.tab-slide-left-enter-active,
+.tab-slide-left-leave-active,
+.tab-slide-right-enter-active,
+.tab-slide-right-leave-active {
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+.tab-slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+.tab-slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+.tab-slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+.tab-slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* M3 crossfade for batch detail switching & container enter/leave */
+.batch-fade-enter-active {
+  transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+.batch-fade-leave-active {
+  transition: opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
+}
+.batch-fade-enter-from,
+.batch-fade-leave-to {
+  opacity: 0;
+}
+
+/* TransitionGroup: batch item add/remove — opacity fade + FLIP move */
+.batch-item-list-enter-active,
+.batch-item-list-move {
+  transition:
+    opacity 0.22s cubic-bezier(0.2, 0, 0, 1),
+    transform 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+.batch-item-list-leave-active {
+  transition:
+    opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15),
+    transform 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
+  /* Take leaving item out of flow so FLIP can slide remaining items up */
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.batch-item-list-enter-from {
+  opacity: 0;
+}
+.batch-item-list-leave-to {
+  opacity: 0;
 }
 </style>

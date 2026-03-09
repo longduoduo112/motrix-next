@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** @fileoverview Advanced task options panel (UA, auth, referer, cookie, proxy, navigate). */
+/** @fileoverview Advanced task options panel (UA, auth, referer, cookie, proxy). */
 import { useI18n } from 'vue-i18n'
 import { NFormItem, NInput, NCheckbox, NCollapseTransition } from 'naive-ui'
 
@@ -12,7 +12,6 @@ defineProps<{
   referer: string
   cookie: string
   allProxy: string
-  newTaskShowDownloading: boolean
 }>()
 
 defineEmits<{
@@ -22,7 +21,6 @@ defineEmits<{
   'update:referer': [value: string]
   'update:cookie': [value: string]
   'update:allProxy': [value: string]
-  'update:newTaskShowDownloading': [value: boolean]
 }>()
 </script>
 
@@ -74,11 +72,6 @@ defineEmits<{
           placeholder="[http://][USER:PASSWORD@]HOST[:PORT]"
           @update:value="$emit('update:allProxy', $event)"
         />
-      </NFormItem>
-      <NFormItem :show-label="false">
-        <NCheckbox :checked="newTaskShowDownloading" @update:checked="$emit('update:newTaskShowDownloading', $event)">
-          {{ t('task.navigate-to-downloading') }}
-        </NCheckbox>
       </NFormItem>
     </div>
   </NCollapseTransition>
