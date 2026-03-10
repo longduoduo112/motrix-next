@@ -101,11 +101,23 @@ describe('checkIsNeedRestart', () => {
   it('returns false for empty changes', () => {
     expect(checkIsNeedRestart({})).toBe(false)
   })
-  it('returns true for restart-required keys', () => {
+  it('returns true for rpcListenPort', () => {
     expect(checkIsNeedRestart({ rpcListenPort: 6800 })).toBe(true)
+  })
+  it('returns true for rpcSecret', () => {
+    expect(checkIsNeedRestart({ rpcSecret: 'new-secret-value' })).toBe(true)
+  })
+  it('returns true for listenPort (BT)', () => {
+    expect(checkIsNeedRestart({ listenPort: 21302 })).toBe(true)
+  })
+  it('returns true for dhtListenPort', () => {
+    expect(checkIsNeedRestart({ dhtListenPort: 26702 })).toBe(true)
   })
   it('returns false for non-restart keys', () => {
     expect(checkIsNeedRestart({ theme: 'dark' })).toBe(false)
+  })
+  it('detects restart key among multiple changes', () => {
+    expect(checkIsNeedRestart({ theme: 'dark', rpcSecret: 'changed' })).toBe(true)
   })
 })
 

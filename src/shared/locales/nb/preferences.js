@@ -127,6 +127,8 @@ export default {
   'interval-yearly': 'Årlig',
   'upnp-mapping-started': 'UPnP-porttilordning aktivert',
   'upnp-mapping-failed': 'UPnP-porttilordning mislyktes',
+  'engine-restarted': 'Motoren ble startet på nytt',
+  'engine-restart-failed': 'Kunne ikke starte motoren på nytt',
   'restore-defaults': 'Gjenopprett standardinnstillinger',
   'restore-defaults-confirm': 'Alle innstillinger vil bli tilbakestilt til fabrikkinnstillinger. Dette kan ikke angres.',
   'restore-defaults-success': 'Standardinnstillinger gjenopprettet',

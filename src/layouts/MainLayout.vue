@@ -134,9 +134,10 @@ onMounted(async () => {
   }, 120)
   startGlobalPolling()
 
-  // Show feedback when the engine finishes initializing.
-  // Uses engineReady to distinguish success from failure.
-  const stopWatchEngine = watch(
+  // Show feedback when the engine finishes initializing (or re-initializing
+  // after a hot-reload restart triggered from Advanced preferences).
+  // Persistent watcher — must survive multiple restart cycles.
+  watch(
     () => appStore.engineInitializing,
     (initializing) => {
       if (!initializing) {
@@ -145,7 +146,6 @@ onMounted(async () => {
         } else {
           message.error(t('app.engine-failed'), { duration: 8000, closable: true })
         }
-        stopWatchEngine()
       }
     },
   )

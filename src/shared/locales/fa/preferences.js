@@ -127,6 +127,8 @@ export default {
   'interval-yearly': 'سالانه',
   'upnp-mapping-started': 'نگاشت پورت UPnP فعال شد',
   'upnp-mapping-failed': 'نگاشت پورت UPnP ناموفق بود',
+  'engine-restarted': 'موتور بازراه‌اندازی شد',
+  'engine-restart-failed': 'بازراه‌اندازی موتور ناموفق بود',
   'restore-defaults': 'بازگردانی پیش‌فرض‌ها',
   'restore-defaults-confirm': 'تمام تنظیمات به مقادیر پیش‌فرض بازگردانده خواهند شد. این عمل قابل بازگشت نیست.',
   'restore-defaults-success': 'پیش‌فرض‌ها بازگردانده شدند',

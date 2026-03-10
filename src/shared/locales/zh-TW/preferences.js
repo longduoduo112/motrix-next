@@ -127,6 +127,8 @@ export default {
   'interval-yearly': '每年',
   'upnp-mapping-started': 'UPnP 連接埠映射已啟用',
   'upnp-mapping-failed': 'UPnP 連接埠映射失敗',
+  'engine-restarted': '引擎已重新啟動',
+  'engine-restart-failed': '引擎重新啟動失敗',
   'restore-defaults': '恢復預設設定',
   'restore-defaults-confirm': '所有設定將恢復為出廠預設值，此操作不可撤銷。',
   'restore-defaults-success': '已恢復預設設定',

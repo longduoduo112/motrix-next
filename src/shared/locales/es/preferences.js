@@ -127,6 +127,8 @@ export default {
   'interval-yearly': 'Anual',
   'upnp-mapping-started': 'Mapeo de puertos UPnP activado',
   'upnp-mapping-failed': 'Error en el mapeo de puertos UPnP',
+  'engine-restarted': 'Motor reiniciado',
+  'engine-restart-failed': 'Error al reiniciar el motor',
   'restore-defaults': 'Restaurar predeterminados',
   'restore-defaults-confirm': 'Todos los ajustes se restablecerán a los valores predeterminados. Esta acción no se puede deshacer.',
   'restore-defaults-success': 'Valores predeterminados restaurados',

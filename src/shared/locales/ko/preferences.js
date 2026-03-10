@@ -127,6 +127,8 @@ export default {
   'interval-yearly': '매년',
   'upnp-mapping-started': 'UPnP 포트 매핑이 활성화되었습니다',
   'upnp-mapping-failed': 'UPnP 포트 매핑에 실패했습니다',
+  'engine-restarted': '엔진이 재시작되었습니다',
+  'engine-restart-failed': '엔진 재시작 실패',
   'restore-defaults': '기본값 복원',
   'restore-defaults-confirm': '모든 설정이 기본값으로 초기화됩니다. 이 작업은 취소할 수 없습니다.',
   'restore-defaults-success': '기본값이 복원되었습니다',

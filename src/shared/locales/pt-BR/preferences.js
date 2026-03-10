@@ -127,6 +127,8 @@ export default {
   'interval-yearly': 'Anual',
   'upnp-mapping-started': 'Mapeamento de portas UPnP ativado',
   'upnp-mapping-failed': 'Falha no mapeamento de portas UPnP',
+  'engine-restarted': 'Motor reiniciado',
+  'engine-restart-failed': 'Falha ao reiniciar o motor',
   'restore-defaults': 'Restaurar padrões',
   'restore-defaults-confirm': 'Todas as configurações serão redefinidas para os valores padrão. Esta ação não pode ser desfeita.',
   'restore-defaults-success': 'Padrões restaurados',

@@ -37,11 +37,52 @@ export async function initClient(options: { port: number; secret: string }): Pro
   return client
 }
 
-/** Closes the active Aria2 RPC connection and resets the client. */
+/** Closes the active Aria2 RPC connection and resets the client.
+ *  Force-closes the raw WebSocket to avoid hanging on pending connections
+ *  where the library's close() waits for an onclose event that never fires. */
 export async function closeClient(): Promise<void> {
   if (client) {
-    await client.close()
+    const c = client
     client = null
+    // Force-close the raw socket — the library's close() method uses
+    // `this.on('close', resolve)` which hangs if onclose never fires.
+    try {
+      if (c.socket) {
+        c.socket.onclose = null
+        c.socket.onerror = null
+        c.socket.onmessage = null
+        c.socket.onopen = null
+        c.socket.close()
+      }
+    } catch {
+      // Socket may already be destroyed — safe to ignore.
+    }
+  }
+}
+
+/** Tears down the current connection and opens a fresh one with new credentials.
+ *  Includes a connection timeout to avoid hanging on unresponsive sockets.
+ *  Used when restart-required settings (port, secret) change at runtime. */
+export async function reconnectClient(options: { port: number; secret: string }, timeoutMs = 3000): Promise<Aria2> {
+  logger.debug('reconnectClient', 'closing old client...')
+  await closeClient()
+  engineReady = false
+
+  // Race initClient against a timeout — WebSocket open() has no built-in
+  // deadline, so a just-started engine can cause it to hang indefinitely.
+  logger.debug('reconnectClient', `connecting to port ${options.port} (timeout ${timeoutMs}ms)`)
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`reconnect timed out after ${timeoutMs}ms`)), timeoutMs),
+  )
+  try {
+    const result = await Promise.race([initClient(options), timeout])
+    logger.debug('reconnectClient', 'connected successfully')
+    return result
+  } catch (e) {
+    // On timeout, the initClient WebSocket may still be pending — tear it down.
+    logger.debug('reconnectClient', `failed: ${e}`)
+    await closeClient()
+    throw e
   }
 }
 
@@ -266,6 +307,7 @@ export async function savePreference(config: Partial<AppConfig>): Promise<void> 
 const api = {
   initClient,
   closeClient,
+  reconnectClient,
   getVersion,
   getGlobalOption,
   getGlobalStat,

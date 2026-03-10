@@ -103,11 +103,11 @@ describe('aria2 API', () => {
       expect(() => getClient()).toThrow('Aria2 client not initialized')
     })
 
-    it('closeClient resets client and calls close', async () => {
+    it('closeClient resets client reference', async () => {
       await initClient({ port: 6800, secret: 's' })
       await closeClient()
 
-      expect(mockClose).toHaveBeenCalledOnce()
+      // Client should be nulled — getClient must throw
       expect(() => getClient()).toThrow('Aria2 client not initialized')
     })
 

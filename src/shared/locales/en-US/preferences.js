@@ -127,6 +127,8 @@ export default {
   'interval-yearly': 'Yearly',
   'upnp-mapping-started': 'UPnP port mapping enabled',
   'upnp-mapping-failed': 'UPnP port mapping failed',
+  'engine-restarted': 'Engine restarted',
+  'engine-restart-failed': 'Engine restart failed',
   'restore-defaults': 'Restore Defaults',
   'restore-defaults-confirm': 'All settings will be reset to factory defaults. This cannot be undone.',
   'restore-defaults-success': 'Defaults restored',

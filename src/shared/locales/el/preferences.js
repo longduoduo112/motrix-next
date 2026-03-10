@@ -127,6 +127,8 @@ export default {
   'interval-yearly': 'Ετήσια',
   'upnp-mapping-started': 'Η αντιστοίχιση θυρών UPnP ενεργοποιήθηκε',
   'upnp-mapping-failed': 'Η αντιστοίχιση θυρών UPnP απέτυχε',
+  'engine-restarted': 'Ο κινητήρας επανεκκινήθηκε',
+  'engine-restart-failed': 'Αποτυχία επανεκκίνησης κινητήρα',
   'restore-defaults': 'Επαναφορά προεπιλογών',
   'restore-defaults-confirm': 'Όλες οι ρυθμίσεις θα επαναφερθούν στις εργοστασιακές τιμές. Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.',
   'restore-defaults-success': 'Οι προεπιλογές επαναφέρθηκαν',

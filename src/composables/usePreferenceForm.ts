@@ -33,7 +33,7 @@ export interface UsePreferenceFormOptions<T extends Record<string, unknown>> {
    * Optional post-save hook for side-effects that depend on the saved values
    * (e.g. showing a "restart required" dialog when the locale changes).
    */
-  afterSave?: (form: T, prevConfig: Partial<AppConfig>) => void
+  afterSave?: (form: T, prevConfig: Partial<AppConfig>) => void | Promise<void>
 
   /**
    * Optional transform applied to the form data before passing it to
@@ -100,7 +100,7 @@ export function usePreferenceForm<T extends Record<string, unknown>>(options: Us
 
     message.success(t('preferences.save-success-message'))
 
-    options.afterSave?.(form.value as T, prevConfig)
+    await options.afterSave?.(form.value as T, prevConfig)
   }
 
   function handleReset(): void {

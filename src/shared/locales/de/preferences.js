@@ -127,6 +127,8 @@ export default {
   'interval-yearly': 'Jährlich',
   'upnp-mapping-started': 'UPnP-Portweiterleitung aktiviert',
   'upnp-mapping-failed': 'UPnP-Portweiterleitung fehlgeschlagen',
+  'engine-restarted': 'Engine neu gestartet',
+  'engine-restart-failed': 'Engine-Neustart fehlgeschlagen',
   'restore-defaults': 'Standardeinstellungen wiederherstellen',
   'restore-defaults-confirm': 'Alle Einstellungen werden auf Werkseinstellungen zurückgesetzt. Dies kann nicht rückgängig gemacht werden.',
   'restore-defaults-success': 'Standardeinstellungen wiederhergestellt',
