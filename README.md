@@ -91,9 +91,9 @@ Download the latest release from [GitHub Releases](https://github.com/AnInsomnia
 
 ### macOS Users
 
-> This app is not code-signed — Apple charges $99/year and I'm a PhD student surviving on instant noodles 🍜
-> My supervisor doesn't know about this side project — [see what I'm supposed to be doing](https://github.com/AnInsomniacy). [Buy me a coffee ☕](https://github.com/AnInsomniacy) and maybe I'll finally afford that certificate!
->
+This app is not code-signed — Apple charges $99/year and I'm a PhD student surviving on instant noodles 🍜
+My supervisor doesn't know about this side project — [see what I'm supposed to be doing](https://github.com/AnInsomniacy). [Buy me a coffee ☕](https://github.com/AnInsomniacy) and maybe I'll finally afford that certificate!
+
 > If macOS says the app is **"damaged and can't be opened"**, open Terminal and run:
 >
 > ```bash
@@ -101,6 +101,8 @@ Download the latest release from [GitHub Releases](https://github.com/AnInsomnia
 > ```
 >
 > This removes the quarantine flag that macOS Gatekeeper applies to unsigned apps.
+
+**Intel Mac (x86_64)** is not supported — the GitHub Actions runner fails to compile some of our dependencies for this architecture. If you're still rocking an Intel Mac, you're welcome to try building from source (see [Development](#development)) — it might just work on your machine!
 
 ### Why No Portable Version?
 
