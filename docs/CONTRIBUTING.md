@@ -104,10 +104,83 @@ docs: update CONTRIBUTING guidelines
 
 ## 🤝 Pull Requests
 
-- Fork the repo and create your branch from `main`
-- If you've added code, ensure TypeScript compiles without errors (`npx vue-tsc --noEmit`)
-- Make sure your code follows the existing style
-- Write a clear PR description
+### Size and scope
+
+Hard limits — PRs that exceed these will be closed without review:
+
+- **< 300 lines** of changed code (excluding tests and auto-generated files like `Cargo.lock`).
+- **< 10 files** touched. Docs-only or config-only PRs may exceed this.
+- **One concern per PR.** A single PR should do exactly one thing.
+
+How to split a large change:
+
+| Instead of | Split into |
+|-----------|-----------|
+| "Add error notification system" (1000 LOC) | PR 1: `errorNormalizer.ts` + tests → PR 2: `useAppNotification.ts` + tests → PR 3: integrate into components |
+| "Add feature + fix lint + update config" | PR 1: lint/config fixes → PR 2: the feature |
+| "Update i18n for 3 features" | One PR per feature, each updating all 26 locales |
+
+### Before you start
+
+- **Bug fixes** — open an issue first to confirm the bug, then reference it in the PR.
+- **New features** — open an issue and get maintainer approval before writing code. PRs for undiscussed features will be closed. This is standard practice across the Tauri ecosystem.
+- **Refactors** — keep them purely behavioral-neutral. Don't sneak functional changes into a refactor PR.
+
+### PR titles
+
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```
+feat(macos): add native traffic light toggle
+fix: handle null errorCode in task notification
+refactor: extract tracker sync into composable
+docs: update i18n translation guide
+```
+
+### Before you push
+
+Run the full check suite locally. PRs that fail any of these will not be reviewed:
+
+```bash
+pnpm format:check           # Prettier formatting
+npx vue-tsc --noEmit        # TypeScript strict mode
+pnpm test                   # Vitest unit tests
+cd src-tauri && cargo test   # Rust tests
+cd src-tauri && cargo clippy # Rust lints (zero warnings)
+```
+
+### i18n changes
+
+If you add or modify i18n keys, **all 26 locales must be updated** using a batch Python script. Partial updates (e.g., only `en-US` and `zh-CN`) break the app for other languages and will not be accepted. See `AGENTS.md` Section D for the script template and the full list of locale directories.
+
+### AI-assisted development
+
+Using AI tools (Copilot, Claude, ChatGPT, Cursor, etc.) to assist development is welcome and encouraged. What is not acceptable is blind vibe coding — generating code with AI and submitting it without understanding or reviewing it.
+
+**Rules:**
+
+1. You must **review and understand every line** you submit, whether you wrote it or an AI did.
+2. You must be able to **explain any change** if asked during review.
+3. Tests must be written **before** implementation (TDD), not bolted on after.
+4. All checks must **pass locally** before pushing — not after a chain of fix commits.
+
+**Disclosure:**
+
+The PR template includes an AI usage disclosure section. Fill it out honestly. Following the [OpenInfra Foundation standard](https://openinfra.org), you may also add a commit trailer:
+
+```
+feat: add speed limit control
+
+AI-Assisted-By: Claude
+```
+
+**What gets your PR closed immediately:**
+
+- Commit history showing a "generate → push → fix → fix → fix" loop.
+- Code that doesn't pass lint, type checks, or tests on first push.
+- Misleading AI disclosure (claiming no AI was used when it was).
+
+This policy follows practices adopted by [Mozilla.ai](https://mozilla.ai), [Drupal](https://drupal.org), and [Ghostty](https://github.com/ghostty-org/ghostty), among others.
 
 ## 📜 License
 
