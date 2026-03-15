@@ -26,6 +26,7 @@ export default {
   'save': '保存',
   'reset': 'リセット',
   'cancel': 'キャンセル',
+  'confirm': '確認',
   'submit': '送信',
   'gt1d': '1日以上',
   'hour': '時',

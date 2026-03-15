@@ -26,6 +26,7 @@ export default {
   'save': 'Сохранить',
   'reset': 'Сбросить',
   'cancel': 'Отмена',
+  'confirm': 'Подтвердить',
   'submit': 'Отправить',
   'gt1d': '> 1 дня',
   'hour': 'ч',

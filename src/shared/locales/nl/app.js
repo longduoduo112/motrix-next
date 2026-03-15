@@ -26,6 +26,7 @@ export default {
   'save': 'Opslaan',
   'reset': 'Herstellen',
   'cancel': 'Annuleren',
+  'confirm': 'Bevestigen',
   'submit': 'Verzenden',
   'gt1d': '> 1 dag',
   'hour': 'u',

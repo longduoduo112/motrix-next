@@ -26,6 +26,7 @@ export default {
   'save': '保存',
   'reset': '重置',
   'cancel': '取消',
+  'confirm': '确认',
   'submit': '提交',
   'gt1d': '超过一天',
   'hour': '时',

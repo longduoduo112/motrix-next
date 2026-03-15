@@ -151,7 +151,7 @@ export async function submitManualUris(
     }
   }
 
-  // Submit magnet URIs in metadata-only mode
+  // Submit magnet URIs (normal mode — global pause-metadata controls pausing)
   const magnetGids: string[] = []
   for (const uri of magnetUris) {
     try {
@@ -186,11 +186,8 @@ export function useAddTaskSubmit({ form, onClose }: UseAddTaskSubmitOptions) {
         await submitBatchItems(batch, options, taskStore)
       }
       if (form.value.uris.trim()) {
-        const magnetGids = await submitManualUris(form.value, options, taskStore)
-        // Store magnet GIDs for TaskView to monitor metadata completion
-        if (magnetGids.length > 0) {
-          appStore.pendingMagnetGids = magnetGids
-        }
+        await submitManualUris(form.value, options, taskStore)
+        // pendingMagnetGids is set directly inside addMagnetUri (task store)
       }
 
       const failed = batch.filter((i) => i.status === 'failed')

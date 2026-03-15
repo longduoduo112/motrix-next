@@ -26,6 +26,7 @@ export default {
   'save': 'Mentés',
   'reset': 'Visszaállítás',
   'cancel': 'Mégse',
+  'confirm': 'Megerősítés',
   'submit': 'Küldés',
   'gt1d': '> 1 nap',
   'hour': 'ó',

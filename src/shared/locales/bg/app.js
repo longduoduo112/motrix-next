@@ -26,6 +26,7 @@ export default {
   'save': 'Запиши',
   'reset': 'Нулиране',
   'cancel': 'Отказ',
+  'confirm': 'Потвърди',
   'submit': 'Изпрати',
   'gt1d': '> 1 ден',
   'hour': 'ч',

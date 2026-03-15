@@ -26,6 +26,7 @@ export default {
   'save': 'Salva',
   'reset': 'Ripristina',
   'cancel': 'Annulla',
+  'confirm': 'Conferma',
   'submit': 'Invia',
   'gt1d': '> 1 giorno',
   'hour': 'h',

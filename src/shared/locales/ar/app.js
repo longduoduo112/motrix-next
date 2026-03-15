@@ -26,6 +26,7 @@ export default {
   'save': 'حفظ',
   'reset': 'إعادة تعيين',
   'cancel': 'إلغاء',
+  'confirm': 'تأكيد',
   'submit': 'إرسال',
   'gt1d': '> يوم واحد',
   'hour': 'س',

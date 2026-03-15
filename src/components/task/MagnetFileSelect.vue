@@ -2,7 +2,7 @@
 /** @fileoverview Modal dialog for selecting files from a magnet link's metadata.
  *
  * Displayed after aria2 downloads the metadata (info dict) for a magnet URI.
- * Uses the same NDataTable file selection pattern as TorrentUpload in AddTask.
+ * Uses NDataTable file selection pattern consistent with torrent upload in AddTask.
  *
  * Props:
  * - show: controls visibility
@@ -10,8 +10,8 @@
  * - taskName: display name for the dialog
  *
  * Emits:
- * - confirm(selectedIndices: number[]): user confirmed selection
- * - cancel: user closed without confirming
+ * - confirm(selectedIndices: number[]): user confirmed — download selected files
+ * - cancel: user chose to delete the download entirely
  */
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -78,20 +78,20 @@ function handleConfirm() {
   emit('confirm', checkedKeys.value as number[])
 }
 
-function handleCancel() {
+function handleDelete() {
   emit('cancel')
 }
 </script>
 
 <template>
-  <NModal :show="show" :mask-closable="false" @update:show="(v) => !v && handleCancel()">
+  <NModal :show="show" :mask-closable="false" @update:show="(v) => !v && handleDelete()">
     <NCard
       :title="taskName || t('task.select-files') || 'Select Files'"
       :bordered="false"
       :closable="true"
       role="dialog"
       class="magnet-file-select-card"
-      @close="handleCancel"
+      @close="handleDelete"
     >
       <NDataTable
         :columns="columns"
@@ -109,11 +109,11 @@ function handleCancel() {
             {{ checkedKeys.length }}/{{ files.length }} — {{ bytesToSize(totalSize) }}
           </NTag>
           <NSpace>
-            <NButton size="small" @click="handleCancel">
-              {{ t('app.cancel') || 'Cancel' }}
+            <NButton size="small" type="error" :ghost="true" @click="handleDelete">
+              {{ t('task.magnet-delete-download') || 'Delete Download' }}
             </NButton>
             <NButton type="primary" size="small" :disabled="!hasSelection" @click="handleConfirm">
-              {{ t('app.confirm') || 'Confirm' }}
+              {{ t('task.magnet-start-download') || 'Start Download' }}
             </NButton>
           </NSpace>
         </NSpace>

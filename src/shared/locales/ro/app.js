@@ -26,6 +26,7 @@ export default {
   'save': 'Salvează',
   'reset': 'Resetează',
   'cancel': 'Anulează',
+  'confirm': 'Confirmă',
   'submit': 'Trimite',
   'gt1d': '> 1 zi',
   'hour': 'h',

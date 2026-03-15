@@ -26,6 +26,7 @@ export default {
   'save': '저장',
   'reset': '초기화',
   'cancel': '취소',
+  'confirm': '확인',
   'submit': '확인',
   'gt1d': '1일 이상',
   'hour': '시',

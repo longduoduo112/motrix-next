@@ -26,6 +26,7 @@ export default {
   'save': 'Lagre',
   'reset': 'Tilbakestill',
   'cancel': 'Avbryt',
+  'confirm': 'Bekreft',
   'submit': 'Send inn',
   'gt1d': '> 1 dag',
   'hour': 't',

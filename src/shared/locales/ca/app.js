@@ -26,6 +26,7 @@ export default {
   'save': 'Desar',
   'reset': 'Restablir',
   'cancel': 'Cancel·lar',
+  'confirm': 'Confirmar',
   'submit': 'Enviar',
   'gt1d': '> 1 dia',
   'hour': 'h',

@@ -14,7 +14,9 @@ import type {
   AddMetalinkParams,
   TaskOptionParams,
 } from '@shared/types'
-import { buildMetadataOnlyOptions } from '@/composables/useMagnetFlow'
+
+import { mergeHistoryIntoTasks } from '@/composables/useTaskLifecycle'
+import { useHistoryStore } from '@/stores/history'
 
 export type { Aria2Task, Aria2File, Aria2Peer }
 
@@ -87,7 +89,22 @@ export const useTaskStore = defineStore('task', () => {
 
   async function fetchList() {
     try {
-      const data = await api.fetchTaskList({ type: currentList.value })
+      let data = await api.fetchTaskList({ type: currentList.value })
+
+      // Fuse history DB records into the stopped tab so completed/errored
+      // tasks survive app restarts. DB records are appended after live
+      // aria2 data; duplicates are deduplicated by GID (aria2 wins).
+      if (currentList.value === 'stopped') {
+        try {
+          const historyStore = useHistoryStore()
+          const records = await historyStore.getRecords()
+          data = mergeHistoryIntoTasks(data, records)
+        } catch (e) {
+          // History DB failure must never break the task list
+          logger.debug('TaskStore.fetchList.historyMerge', e)
+        }
+      }
+
       taskList.value = data
       const gids = data.map((task: Aria2Task) => task.gid)
       selectedGidList.value = intersection(selectedGidList.value, gids)
@@ -189,18 +206,37 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   /**
-   * Adds a magnet URI in metadata-only mode. Returns the GID.
-   * Caller is responsible for monitoring completion and presenting file selection.
+   * Adds a magnet URI as a normal download. Returns the metadata GID.
+   *
+   * The global `pause-metadata` setting (controlled by btAutoDownloadContent)
+   * determines what happens after metadata resolves:
+   * - pause-metadata=true  → follow-up download auto-pauses → poller polls
+   *   followedBy, shows file selection, then unpauses
+   * - pause-metadata=false → follow-up download starts immediately (no selection)
+   *
+   * Directly registers the GID for monitoring to avoid caller-chain breaks.
    */
   async function addMagnetUri(data: { uri: string; options: Aria2EngineOptions }): Promise<string> {
-    const metaOptions = buildMetadataOnlyOptions(data.options)
     const gids = await api.addUri({
       uris: [data.uri],
       outs: [],
-      options: metaOptions,
+      options: data.options,
     })
+    const gid = gids[0]
+
+    // Register this GID for the magnet metadata poller directly.
+    // We do this inside the store to avoid depending on the caller chain.
+    const { useAppStore } = await import('@/stores/app')
+    const appStore = useAppStore()
+    appStore.pendingMagnetGids = [...appStore.pendingMagnetGids, gid]
+
     await fetchList()
-    return gids[0]
+    return gid
+  }
+
+  /** Fetch a single task's full status (used for polling followedBy on magnet tasks). */
+  async function fetchTaskStatus(gid: string): Promise<Aria2Task> {
+    return api.fetchTaskItem({ gid })
   }
 
   /** Retrieves the file list for a download task. */
@@ -309,19 +345,37 @@ export const useTaskStore = defineStore('task', () => {
     if (gid === currentTaskGid.value) hideTaskDetail()
     const { ERROR, COMPLETE, REMOVED } = TASK_STATUS
     if ([ERROR, COMPLETE, REMOVED].indexOf(status) === -1) return
+    // Remove from aria2 current-session memory (may fail for history-only GIDs)
     try {
       await api.removeTaskRecord({ gid })
-    } finally {
-      await fetchList()
+    } catch (e) {
+      logger.debug('TaskStore.removeTaskRecord.aria2', e)
     }
+    // Remove from persistent history DB
+    try {
+      const historyStore = useHistoryStore()
+      await historyStore.removeRecord(gid)
+    } catch (e) {
+      logger.debug('TaskStore.removeTaskRecord.db', e)
+    }
+    await fetchList()
   }
 
   async function purgeTaskRecord() {
+    // Clear aria2 current-session stopped records
     try {
       await api.purgeTaskRecord()
-    } finally {
-      await fetchList()
+    } catch (e) {
+      logger.debug('TaskStore.purgeTaskRecord.aria2', e)
     }
+    // Clear persistent history DB
+    try {
+      const historyStore = useHistoryStore()
+      await historyStore.clearRecords()
+    } catch (e) {
+      logger.debug('TaskStore.purgeTaskRecord.db', e)
+    }
+    await fetchList()
   }
 
   /**
@@ -381,11 +435,17 @@ export const useTaskStore = defineStore('task', () => {
       throw e // propagate original error to caller
     }
 
-    // All new downloads succeeded — safe to remove old stopped record
+    // All new downloads succeeded — remove old record from both sources
     try {
       await api.removeTaskRecord({ gid })
     } catch (e) {
       logger.debug('TaskStore.restartTask.removeRecord', e)
+    }
+    try {
+      const historyStore = useHistoryStore()
+      await historyStore.removeRecord(gid)
+    } catch (e) {
+      logger.debug('TaskStore.restartTask.removeHistoryRecord', e)
     }
 
     await fetchList()
@@ -469,6 +529,7 @@ export const useTaskStore = defineStore('task', () => {
     addMetalink,
     addMagnetUri,
     getFiles,
+    fetchTaskStatus,
     getTaskOption,
     changeTaskOption,
     removeTask,

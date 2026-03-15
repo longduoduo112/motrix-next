@@ -26,6 +26,7 @@ export default {
   'save': 'Kaydet',
   'reset': 'Sıfırla',
   'cancel': 'İptal',
+  'confirm': 'Onayla',
   'submit': 'Gönder',
   'gt1d': '> 1 gün',
   'hour': 'sa',

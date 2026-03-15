@@ -26,6 +26,7 @@ export default {
   'save': 'ذخیره',
   'reset': 'بازنشانی',
   'cancel': 'لغو',
+  'confirm': 'تأیید',
   'submit': 'ارسال',
   'gt1d': '> ۱ روز',
   'hour': 'ساعت',

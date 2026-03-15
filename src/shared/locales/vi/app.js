@@ -26,6 +26,7 @@ export default {
   'save': 'Lưu',
   'reset': 'Đặt lại',
   'cancel': 'Hủy',
+  'confirm': 'Xác nhận',
   'submit': 'Gửi',
   'gt1d': '> 1 ngày',
   'hour': 'giờ',

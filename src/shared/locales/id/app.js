@@ -26,6 +26,7 @@ export default {
   'save': 'Simpan',
   'reset': 'Atur ulang',
   'cancel': 'Batal',
+  'confirm': 'Konfirmasi',
   'submit': 'Kirim',
   'gt1d': '> 1 hari',
   'hour': 'jam',

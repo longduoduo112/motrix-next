@@ -11,7 +11,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import { isEngineReady } from '@/api/aria2'
 import { deleteTaskFiles } from '@/composables/useFileDelete'
 import { parseFilesForSelection, buildSelectFileOption } from '@/composables/useMagnetFlow'
-import { buildHistoryRecord } from '@/composables/useTaskLifecycle'
+import { buildHistoryRecord, isMetadataTask } from '@/composables/useTaskLifecycle'
 import { shouldDeleteTorrent, deleteTorrentFile } from '@/composables/useDownloadCleanup'
 import type { MagnetFileItem } from '@/composables/useMagnetFlow'
 import type { Aria2Task } from '@shared/types'
@@ -85,6 +85,8 @@ watch(() => props.status, changeCurrentList)
 onMounted(() => {
   changeCurrentList()
   taskStore.setOnTaskError((task) => {
+    // Skip BT metadata-only downloads — they are intermediate steps
+    if (isMetadataTask(task)) return
     // Persist error record to history DB (fire-and-forget)
     const record = buildHistoryRecord(task)
     historyStore.addRecord(record).catch((e) => logger.debug('TaskView.historyRecord.error', e))
@@ -97,6 +99,8 @@ onMounted(() => {
   })
   // Wire task completion lifecycle: history recording + optional torrent cleanup
   taskStore.setOnTaskComplete((task) => {
+    // Skip BT metadata-only downloads — they are intermediate steps
+    if (isMetadataTask(task)) return
     // Record to history DB (fire-and-forget)
     const record = buildHistoryRecord(task)
     historyStore.addRecord(record).catch((e) => logger.debug('TaskView.historyRecord', e))
@@ -119,7 +123,14 @@ onBeforeUnmount(() => {
 
 // ── Magnet metadata monitoring ───────────────────────────────────────
 
-/** Poll pending magnet tasks for metadata completion. */
+/**
+ * Poll pending magnet tasks for metadata completion.
+ *
+ * aria2 creates a NEW GID (via followedBy) for the actual download after
+ * magnet metadata resolves. With pause-metadata=true, this follow-up task
+ * starts paused. We poll the metadata GID for followedBy, then call getFiles
+ * on the follow-up GID to show the file selection dialog.
+ */
 function startMagnetPoll() {
   if (magnetPollTimer) clearTimeout(magnetPollTimer)
 
@@ -132,17 +143,22 @@ function startMagnetPoll() {
 
     for (const gid of [...gids]) {
       try {
-        const files = await taskStore.getFiles(gid)
-        // Metadata not ready yet — files will have length=0 or only 1 placeholder
-        const realFiles = files.filter((f) => Number(f.length) > 0)
+        const task = await taskStore.fetchTaskStatus(gid)
+
+        // Use followedBy GID if available (magnet follow-up), else same GID
+        const targetGid = task.followedBy?.[0] ?? gid
+
+        const files = await taskStore.getFiles(targetGid)
+        // Filter real content files (length > 0) and skip [METADATA] entries
+        const realFiles = files.filter((f) => Number(f.length) > 0 && !f.path.startsWith('[METADATA]'))
         if (realFiles.length === 0) continue
 
-        // Metadata ready — show file selection dialog
+        // Metadata resolved — show file selection dialog
         appStore.pendingMagnetGids = gids.filter((g) => g !== gid)
         const parsed = parseFilesForSelection(realFiles)
         magnetSelectFiles.value = parsed
-        magnetSelectGid.value = gid
-        magnetSelectName.value = parsed[0]?.name || 'Magnet Download'
+        magnetSelectGid.value = targetGid
+        magnetSelectName.value = task.bittorrent?.info?.name || parsed[0]?.name || 'Magnet Download'
         magnetSelectVisible.value = true
         return // Process one magnet at a time
       } catch {
@@ -173,12 +189,9 @@ async function handleMagnetConfirm(selectedIndices: number[]) {
     const selectFile = buildSelectFileOption(selectedIndices)
     await taskStore.changeTaskOption({
       gid,
-      options: {
-        'select-file': selectFile,
-        'bt-metadata-only': 'false',
-      },
+      options: { 'select-file': selectFile },
     })
-    // Unpause to start download with selected files
+    // Resume the paused download with selected files
     const task = taskStore.taskList.find((t) => t.gid === gid)
     if (task) {
       await taskStore.resumeTask(task)
@@ -200,6 +213,7 @@ async function handleMagnetCancel() {
     if (task) {
       await taskStore.removeTask(task)
     }
+    message.info(t('task.magnet-download-cancelled') || 'Download cancelled')
   } catch (e) {
     logger.error('TaskView.magnetCancel', e)
   }

@@ -26,6 +26,7 @@ export default {
   'save': 'บันทึก',
   'reset': 'รีเซ็ต',
   'cancel': 'ยกเลิก',
+  'confirm': 'ยืนยัน',
   'submit': 'ส่ง',
   'gt1d': '> 1 วัน',
   'hour': 'ชม.',

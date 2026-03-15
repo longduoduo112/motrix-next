@@ -26,6 +26,7 @@ export default {
   'save': 'Zapisz',
   'reset': 'Resetuj',
   'cancel': 'Anuluj',
+  'confirm': 'Potwierdź',
   'submit': 'Wyślij',
   'gt1d': '> 1 dzień',
   'hour': 'godz',
