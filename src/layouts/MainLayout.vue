@@ -511,7 +511,7 @@ onUnmounted(() => {
     </div>
     <main class="content">
       <router-view v-slot="{ Component, route: viewRoute }">
-        <Transition name="fade" mode="out-in">
+        <Transition name="fade" mode="out-in" appear>
           <component :is="Component" :key="viewRoute.path" />
         </Transition>
       </router-view>

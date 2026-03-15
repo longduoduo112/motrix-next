@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** @fileoverview Scrollable task list container with empty state. */
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useTaskStore } from '@/stores/task'
 import { useTheme } from '@/composables/useTheme'
 import TaskItem from './TaskItem.vue'
@@ -23,21 +23,19 @@ const taskStore = useTaskStore()
 const { isDark } = useTheme()
 const watermarkSrc = computed(() => (isDark.value ? watermarkLight : watermarkDark))
 
-const mounted = ref(false)
-const taskList = ref<Aria2Task[]>([])
-const selectedGidList = computed(() => taskStore.selectedGidList)
+// ── Task list with immediate watermark ───────────────────────────────
+// The watermark is rendered from the FIRST frame when the task list is
+// empty.  The route-level <Transition name="fade"> handles the visual
+// fade-in on page mount.  The watermark's own <Transition> only plays
+// for in-page empty↔non-empty changes (e.g. deleting the last task).
 
-onMounted(() => {
-  nextTick(() => {
-    mounted.value = true
-    taskList.value = taskStore.taskList
-  })
-})
+const taskList = ref<Aria2Task[]>(taskStore.taskList)
+const selectedGidList = computed(() => taskStore.selectedGidList)
 
 watch(
   () => taskStore.taskList,
   (v) => {
-    if (mounted.value) taskList.value = v
+    taskList.value = v
   },
 )
 
@@ -83,8 +81,8 @@ function handleItemClick(task: Aria2Task, event: MouseEvent) {
         />
       </div>
     </TransitionGroup>
-    <Transition name="fade">
-      <div v-if="mounted && taskList.length === 0" class="no-task" @dragstart.prevent @selectstart.prevent>
+    <Transition name="watermark">
+      <div v-if="taskList.length === 0" class="no-task" @dragstart.prevent @selectstart.prevent>
         <div class="no-task-inner">
           <img :src="watermarkSrc" alt="Motrix Next" class="no-task-brand" draggable="false" />
         </div>
@@ -159,14 +157,18 @@ function handleItemClick(task: Aria2Task, event: MouseEvent) {
   user-select: none;
   -webkit-user-drag: none;
 }
-.fade-enter-active {
+
+/* ── Watermark transition — unique name avoids collision with the   ── */
+/* ── global "fade" classes used by the route-level <Transition>.   ── */
+/* ── GPU-only: animates opacity exclusively (no layout/paint).     ── */
+.watermark-enter-active {
   transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
-.fade-leave-active {
+.watermark-leave-active {
   transition: opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
 }
-.fade-enter-from,
-.fade-leave-to {
+.watermark-enter-from,
+.watermark-leave-to {
   opacity: 0;
 }
 </style>
