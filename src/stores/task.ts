@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { EMPTY_STRING, TASK_STATUS } from '@shared/constants'
-import { checkTaskIsBT, checkTaskIsSeeder, getTaskUris, intersection } from '@shared/utils'
+import { checkTaskIsBT, checkTaskIsSeeder, intersection } from '@shared/utils'
 import { logger } from '@shared/logger'
 import type {
   Aria2Task,
@@ -18,6 +18,8 @@ import type {
 import { historyRecordToTask, buildHistoryRecord } from '@/composables/useTaskLifecycle'
 import { shouldShowFileSelection } from '@/composables/useMagnetFlow'
 import { useHistoryStore } from '@/stores/history'
+import { createTaskNotifier } from './taskNotifications'
+import { restartTask as restartTaskImpl } from './taskRestart'
 
 export type { Aria2Task, Aria2File, Aria2Peer }
 
@@ -63,9 +65,7 @@ export const useTaskStore = defineStore('task', () => {
 
   let api: TaskApi
 
-  const notifiedErrorGids = new Set<string>()
-  const notifiedCompleteGids = new Set<string>()
-  let initialScanDone = false
+  const notifier = createTaskNotifier()
   let onTaskError: ((task: Aria2Task) => void) | null = null
   let onTaskComplete: ((task: Aria2Task) => void) | null = null
 
@@ -114,44 +114,11 @@ export const useTaskStore = defineStore('task', () => {
           if (fresh) updateCurrentTaskItem(fresh)
         }
       }
-      // Fetch stopped tasks for error + completion scanning regardless of tab.
-      // Completed/errored tasks always move to the stopped pool, so we must
-      // scan it from any tab to avoid missing lifecycle events.
-      const stoppedTasks =
-        onTaskError || onTaskComplete ? (await api.fetchTaskList({ type: 'stopped' })).slice(0, 20) : []
-      const tasksToScan = onTaskError || onTaskComplete ? [...data, ...stoppedTasks] : []
-
-      // Detect newly errored tasks and notify
-      if (onTaskError) {
-        for (const task of tasksToScan) {
-          if (
-            task.status === TASK_STATUS.ERROR &&
-            task.errorCode &&
-            task.errorCode !== '0' &&
-            !notifiedErrorGids.has(task.gid)
-          ) {
-            notifiedErrorGids.add(task.gid)
-            if (initialScanDone) {
-              onTaskError(task)
-            }
-          }
-        }
+      // Scan for error + completion lifecycle events via the extracted notifier.
+      if (onTaskError || onTaskComplete) {
+        const stoppedTasks = (await api.fetchTaskList({ type: 'stopped' })).slice(0, 20)
+        notifier.scanTasks([...data, ...stoppedTasks], { onTaskError, onTaskComplete })
       }
-      // Detect newly completed tasks and fire callback (complete only — not error)
-      if (onTaskComplete) {
-        for (const task of tasksToScan) {
-          if (task.status === 'complete' && !notifiedCompleteGids.has(task.gid)) {
-            notifiedCompleteGids.add(task.gid)
-            if (initialScanDone) {
-              onTaskComplete(task)
-            }
-          }
-        }
-      }
-      // Mark initial scan as done AFTER both callbacks — unconditionally.
-      // This prevents ghost notifications for tasks that were already
-      // in stopped state before the app started monitoring.
-      initialScanDone = true
     } catch (e) {
       logger.warn('TaskStore.fetchList', (e as Error).message)
     }
@@ -385,86 +352,11 @@ export const useTaskStore = defineStore('task', () => {
    * Restarts a stopped/errored/completed task by extracting its URI(s),
    * re-submitting each as a new download, and removing the old record.
    *
-   * For BT tasks: rebuilds the magnet link → single addUri call.
-   * For multi-file HTTP/FTP tasks: submits each file URI separately.
-   *
-   * Uses rollback on partial failure: if any URI fails to submit, all
-   * previously created downloads are removed so no orphan tasks remain.
-   * The old stopped record is only deleted after ALL new downloads succeed.
+   * Delegates to the extracted restartTask module for the heavy lifting.
    */
   async function restartTask(task: Aria2Task) {
-    const { status, gid, dir } = task
-    const { ERROR, COMPLETE, REMOVED } = TASK_STATUS
-    if (status !== ERROR && status !== COMPLETE && status !== REMOVED) return
-
-    const uris = getTaskUris(task, true) // include trackers for BT
-    if (uris.length === 0) {
-      throw new Error('Cannot restart: no download URIs found for this task')
-    }
-
-    // Preserve original per-task options (headers, proxy, auth, out, select-file, etc.).
-    // Filter out read-only / non-portable keys that aria2 rejects on addUri.
-    const NON_PORTABLE_KEYS = new Set(['followTorrent', 'followMetalink', 'pauseMetadata', 'gid'])
-
-    const options: Record<string, string> = {}
-    try {
-      const orig = await api.getOption({ gid })
-      for (const [k, v] of Object.entries(orig)) {
-        if (!NON_PORTABLE_KEYS.has(k) && v !== '') {
-          options[k] = v
-        }
-      }
-    } catch {
-      // Fallback: at minimum preserve download directory
-      if (dir) options.dir = dir
-    }
-
-    // Submit each URI as a separate download, tracking created GIDs for rollback
-    const isBT = checkTaskIsBT(task)
-    const createdGids: string[] = []
-    try {
-      for (const uri of uris) {
-        const newGid = await api.addUriAtomic({ uris: [uri], options })
-        createdGids.push(newGid)
-        // BT restarts produce magnet URIs — register with the metadata poller
-        // only when pause-metadata is enabled (file selection mode).
-        if (isBT) {
-          const { usePreferenceStore } = await import('@/stores/preference')
-          const preferenceStore = usePreferenceStore()
-          if (shouldShowFileSelection(preferenceStore.config)) {
-            const { useAppStore } = await import('@/stores/app')
-            const appStore = useAppStore()
-            appStore.pendingMagnetGids = [...appStore.pendingMagnetGids, newGid]
-          }
-        }
-      }
-    } catch (e) {
-      // Rollback: remove any partially created tasks
-      for (const newGid of createdGids) {
-        try {
-          await api.removeTask({ gid: newGid })
-        } catch {
-          // best-effort cleanup
-        }
-      }
-      throw e // propagate original error to caller
-    }
-
-    // All new downloads succeeded — remove old record from both sources
-    try {
-      await api.removeTaskRecord({ gid })
-    } catch (e) {
-      logger.debug('TaskStore.restartTask.removeRecord', e)
-    }
-    try {
-      const historyStore = useHistoryStore()
-      await historyStore.removeRecord(gid)
-    } catch (e) {
-      logger.debug('TaskStore.restartTask.removeHistoryRecord', e)
-    }
-
-    await fetchList()
-    api.saveSession()
+    const historyStore = useHistoryStore()
+    await restartTaskImpl(task, { ...api, fetchList, saveSession: () => api.saveSession() }, historyStore)
   }
 
   /**

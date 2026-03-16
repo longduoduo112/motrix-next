@@ -66,16 +66,19 @@ describe('Fix 2: log-level triggers app relaunch (not engine restart)', () => {
 // ─── Fix 3: Export uses save dialog ────────────────────────────────
 
 describe('Fix 3: Export uses save dialog (user chooses path)', () => {
-  let advancedVueSource: string
   let appRsSource: string
 
   beforeAll(() => {
-    advancedVueSource = fs.readFileSync(path.join(SRC_ROOT, 'src', 'components', 'preference', 'Advanced.vue'), 'utf-8')
     appRsSource = fs.readFileSync(path.join(TAURI_ROOT, 'src', 'commands', 'app.rs'), 'utf-8')
   })
 
-  it('Advanced.vue imports the save dialog from @tauri-apps/plugin-dialog', () => {
-    expect(advancedVueSource).toContain('@tauri-apps/plugin-dialog')
+  it('Advanced.vue (or its composable) imports the save dialog from @tauri-apps/plugin-dialog', () => {
+    // The save dialog import was extracted from Advanced.vue to useAdvancedActions composable
+    const composableSource = fs.readFileSync(
+      path.join(SRC_ROOT, 'src', 'composables', 'useAdvancedActions.ts'),
+      'utf-8',
+    )
+    expect(composableSource).toContain('@tauri-apps/plugin-dialog')
   })
 
   it('the Rust command accepts a save_path parameter', () => {

@@ -1,14 +1,11 @@
 <script setup lang="ts">
 /** @fileoverview Main application layout with sidebar, subnav, and IPC event handling. */
 import { computed, ref, nextTick, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
-import { detectKind, createBatchItem } from '@shared/utils/batchHelpers'
-import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { listen } from '@tauri-apps/api/event'
 import { logger } from '@shared/logger'
 import { throttledResizeHandler, cancelPendingResize } from '@/layouts/resizeThrottle'
 import AsideBar from '@/components/layout/AsideBar.vue'
@@ -23,15 +20,12 @@ import UpdateDialog from '@/components/preference/UpdateDialog.vue'
 import { useTaskStore } from '@/stores/task'
 import { usePreferenceStore } from '@/stores/preference'
 import { useAppMessage } from '@/composables/useAppMessage'
-import { openUrl } from '@tauri-apps/plugin-opener'
-import aria2Api, { isEngineReady, setEngineReady } from '@/api/aria2'
-import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { NModal, NButton, NSpace, NIcon, NCheckbox, useDialog } from 'naive-ui'
 import { WarningOutline } from '@vicons/ionicons5'
+import { useAppEvents } from '@/composables/useAppEvents'
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const appStore = useAppStore()
 const taskStore = useTaskStore()
 const preferenceStore = usePreferenceStore()
@@ -59,6 +53,20 @@ let unlistenSingleInstance: (() => void) | null = null
 let unlistenTrayMenu: (() => void) | null = null
 let unlistenResize: (() => void) | null = null
 let globalStatTimer: ReturnType<typeof setTimeout> | null = null
+
+import aria2Api, { isEngineReady } from '@/api/aria2'
+
+const { setupListeners } = useAppEvents({
+  t,
+  appStore,
+  taskStore,
+  preferenceStore,
+  message,
+  navDialog,
+  showEngineOverlay,
+  isExiting,
+  handleExitConfirm,
+})
 
 function startGlobalPolling() {
   stopGlobalPolling()
@@ -201,263 +209,24 @@ onMounted(async () => {
     }
   }
 
-  // Show feedback when the engine finishes initializing (or re-initializing
-  // after a hot-reload restart triggered from Advanced preferences).
-  // Persistent watcher — must survive multiple restart cycles.
-  watch(
-    () => appStore.engineInitializing,
-    (initializing) => {
-      if (!initializing) {
-        if (appStore.engineReady) {
-          message.success(t('app.engine-ready'))
-        } else {
-          message.error(t('app.engine-failed'), { duration: 8000, closable: true })
-        }
-      }
-    },
-  )
-
-  // Engine crash recovery — show full-screen overlay and drive auto-restart.
-  // Replaces the old engine-error toast with a blocking overlay that prevents
-  // the user from interacting with a broken download engine.
-  listen<{ code: number; signal?: number }>('engine-crashed', (event) => {
-    // Suppress crash recovery if the app is shutting down — stop_engine
-    // kills aria2 intentionally and the Rust generation guard handles
-    // stale monitors, but this is a defense-in-depth safeguard.
-    if (isExiting.value) return
-    const { code } = event.payload
-    logger.error('MainLayout', `engine crashed with code ${code}`)
-    appStore.engineReady = false
-    setEngineReady(false)
-    showEngineOverlay.value = true
-  })
-
-  // Notify user when the engine is intentionally stopped (restart, update, relaunch).
-  listen('engine-stopped', () => {
-    message.warning(t('app.engine-stopped'))
-  })
-
-  router.beforeEach((to, from) => {
-    // Clear stale task cards BEFORE the new TaskView mounts.
-    // Without this, the shared Pinia taskList still contains old-tab data
-    // when the new component initializes, causing a ghost flash of cards
-    // from the previous tab followed by a leave animation.
-    if (from.name === 'task' && to.name === 'task' && from.params.status !== to.params.status) {
-      taskStore.taskList = []
-      taskStore.selectedGidList = []
-    }
-
-    const leavingPrefs = from.path.startsWith('/preference') && !to.path.startsWith('/preference')
-    const switchingPrefsTab =
-      from.path.startsWith('/preference') && to.path.startsWith('/preference') && from.path !== to.path
-    if ((leavingPrefs || switchingPrefsTab) && preferenceStore.pendingChanges) {
-      return new Promise<boolean>((resolve) => {
-        navDialog.warning({
-          title: t('preferences.not-saved'),
-          content: t('preferences.not-saved-confirm'),
-          positiveText: t('preferences.save-and-leave'),
-          negativeText: t('preferences.leave-without-saving'),
-          onPositiveClick: async () => {
-            try {
-              if (preferenceStore.saveBeforeLeave) {
-                await preferenceStore.saveBeforeLeave()
-              }
-              preferenceStore.pendingChanges = false
-              resolve(true)
-            } catch (e) {
-              console.error('Save before leave failed:', e)
-              resolve(false)
-            }
-          },
-          onNegativeClick: () => {
-            preferenceStore.pendingChanges = false
-            resolve(true)
-          },
-          onClose: () => {
-            resolve(false)
-          },
-          onMaskClick: () => {
-            resolve(false)
-          },
-        })
-      })
-    }
-    return true
-  })
-
-  const webview = getCurrentWebview()
-  unlistenDragDrop = await webview.onDragDropEvent((event) => {
-    if (event.payload.type === 'drop') {
-      const paths = event.payload.paths
-      const validPaths =
-        paths?.filter((p: string) => p.endsWith('.torrent') || p.endsWith('.metalink') || p.endsWith('.meta4')) || []
-      if (validPaths.length > 0) {
-        const items = validPaths.map((p: string) => createBatchItem(detectKind(p), p))
-        const skipped = appStore.enqueueBatch(items)
-        if (skipped > 0) message.warning(t('task.duplicate-task'))
-      }
-    }
-  })
-  unlistenMenuEvent = await listen<string>('menu-event', async (event) => {
-    const action = event.payload
-    switch (action) {
-      case 'new-task':
-        await getCurrentWindow().show()
-        await getCurrentWindow().setFocus()
-        appStore.showAddTaskDialog()
-        break
-      case 'open-torrent': {
-        const selected = await openDialog({
-          multiple: true,
-          filters: [{ name: 'Torrent / Metalink', extensions: ['torrent', 'metalink', 'meta4'] }],
-        })
-        if (typeof selected === 'string') {
-          const skipped = appStore.enqueueBatch([createBatchItem(detectKind(selected), selected)])
-          if (skipped > 0) message.warning(t('task.duplicate-task'))
-        } else if (Array.isArray(selected) && selected.length > 0) {
-          const skipped = appStore.enqueueBatch(selected.map((p) => createBatchItem(detectKind(p), p)))
-          if (skipped > 0) message.warning(t('task.duplicate-task'))
-        }
-        break
-      }
-      case 'preferences':
-        router.push('/preference').catch(() => {
-          /* duplicate navigation */
-        })
-        break
-      case 'resume-all':
-        if (!(await taskStore.hasPausedTasks())) break
-        taskStore.resumeAllTask().catch((e) => logger.error('TrayMenu', e))
-        break
-      case 'pause-all':
-        if (!(await taskStore.hasActiveTasks())) break
-        taskStore.pauseAllTask().catch((e) => logger.error('TrayMenu', e))
-        break
-      case 'release-notes':
-        openUrl('https://github.com/AnInsomniacy/motrix-next/releases').catch((e) => logger.error('TrayMenu', e))
-        break
-      case 'report-issue':
-        openUrl('https://github.com/AnInsomniacy/motrix-next/issues').catch((e) => logger.error('TrayMenu', e))
-        break
-    }
-  })
-
-  // Bridge native tray menu actions to main window.
-  // Rust on_menu_event emits 'tray-menu-action' with the action as payload.
-  unlistenTrayMenu = await listen<string>('tray-menu-action', async (event) => {
-    const action = event.payload
-    const mainWindow = getCurrentWindow()
-    switch (action) {
-      case 'show':
-        await mainWindow.show()
-        await mainWindow.setFocus()
-        break
-      case 'new-task':
-        await mainWindow.show()
-        await mainWindow.setFocus()
-        appStore.showAddTaskDialog()
-        break
-      case 'resume-all':
-        await mainWindow.show()
-        await mainWindow.setFocus()
-        if (!(await taskStore.hasPausedTasks())) {
-          message.info(t('task.no-paused-tasks'))
-          break
-        }
-        if (!isEngineReady()) {
-          message.warning(t('app.engine-not-ready'))
-        } else {
-          navDialog.warning({
-            title: t('task.resume-all-task'),
-            content: t('task.resume-all-task-confirm') || 'Resume all tasks?',
-            positiveText: t('app.yes'),
-            negativeText: t('app.no'),
-            onPositiveClick: () => {
-              taskStore
-                .resumeAllTask()
-                .then(() => message.success(t('task.resume-all-task-success')))
-                .catch(() => message.error(t('task.resume-all-task-fail')))
-            },
-          })
-        }
-        break
-      case 'pause-all':
-        await mainWindow.show()
-        await mainWindow.setFocus()
-        if (!(await taskStore.hasActiveTasks())) {
-          message.info(t('task.no-active-tasks'))
-          break
-        }
-        if (!isEngineReady()) {
-          message.warning(t('app.engine-not-ready'))
-        } else {
-          const d = navDialog.warning({
-            title: t('task.pause-all-task'),
-            content: t('task.pause-all-task-confirm') || 'Pause all tasks?',
-            positiveText: t('app.yes'),
-            negativeText: t('app.no'),
-            onPositiveClick: () => {
-              d.loading = true
-              d.negativeButtonProps = { disabled: true }
-              d.closable = false
-              d.maskClosable = false
-              taskStore
-                .pauseAllTask()
-                .then(async () => {
-                  await new Promise((r) => setTimeout(r, 500))
-                  await taskStore.fetchList()
-                  message.success(t('task.pause-all-task-success'))
-                  d.destroy()
-                })
-                .catch(() => {
-                  message.error(t('task.pause-all-task-fail'))
-                  d.destroy()
-                })
-              return false
-            },
-          })
-        }
-        break
-      case 'quit':
-        await handleExitConfirm()
-        break
-    }
-  })
-
-  unlistenDeepLink = await listen<string[]>('deep-link-open', (event) => {
-    appStore.handleDeepLinkUrls(event.payload)
-  })
-
-  unlistenSingleInstance = await listen<string[]>('single-instance-triggered', (event) => {
-    const argv = event.payload
-    const urls = argv.filter(
-      (a) =>
-        !a.startsWith('-') &&
-        (a.includes('://') || a.endsWith('.torrent') || a.endsWith('.metalink') || a.endsWith('.meta4')),
-    )
-    if (urls.length > 0) appStore.handleDeepLinkUrls(urls)
-  })
+  // Engine-init feedback, navigation guards, IPC listeners, and crash recovery
+  // are encapsulated in the useAppEvents composable.
+  const listeners = await setupListeners()
+  unlistenDragDrop = listeners.unlistenDragDrop
+  unlistenMenuEvent = listeners.unlistenMenuEvent
+  unlistenTrayMenu = listeners.unlistenTrayMenu
+  unlistenDeepLink = listeners.unlistenDeepLink
+  unlistenSingleInstance = listeners.unlistenSingleInstance
 
   const appWindow = getCurrentWindow()
   unlistenCloseRequested = await appWindow.onCloseRequested(async (event) => {
-    // Do NOT call event.preventDefault() here — Rust always calls
-    // api.prevent_close() for the main window.  Calling preventDefault()
-    // from JS is redundant and freezes the webview on macOS (Tauri v2 bug).
     void event
-
-    // When minimize-to-tray is enabled, hide the window instead of prompting
-    // to exit. This covers all native close paths: taskbar close, Alt+F4,
-    // GNOME Activities overview ×, and WM-level close signals on Wayland.
     if (preferenceStore.config.minimizeToTrayOnClose) {
-      // Signal Rust to hide the Dock icon if the user opted in.
-      // The Rust command reads the preference from the persistent store.
       const { invoke } = await import('@tauri-apps/api/core')
       await invoke('set_dock_visible', { visible: false })
-
       await appWindow.hide()
       return
     }
-
     if (!isExiting.value) {
       rememberChoice.value = !!preferenceStore.config.minimizeToTrayOnClose
       showExitDialog.value = true

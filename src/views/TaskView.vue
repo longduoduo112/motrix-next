@@ -1,16 +1,13 @@
 <script setup lang="ts">
 /** @fileoverview Task list view with polling, task actions, and file delete confirmation. */
-import { computed, watch, onMounted, onBeforeUnmount, ref, h, provide } from 'vue'
+import { computed, watch, onMounted, onBeforeUnmount, ref, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTaskStore } from '@/stores/task'
 import { useAppStore } from '@/stores/app'
 import { usePreferenceStore } from '@/stores/preference'
 import { useHistoryStore } from '@/stores/history'
-import { getTaskUri, getTaskName, resolveOpenTarget } from '@shared/utils'
-import { revealItemInDir, openPath } from '@tauri-apps/plugin-opener'
-import { exists, stat } from '@tauri-apps/plugin-fs'
 import { isEngineReady } from '@/api/aria2'
-import { deleteTaskFiles } from '@/composables/useFileDelete'
+import { useTaskActions } from '@/composables/useTaskActions'
 import {
   parseFilesForSelection,
   buildSelectFileOption,
@@ -19,11 +16,10 @@ import {
 import { buildHistoryRecord, isMetadataTask } from '@/composables/useTaskLifecycle'
 import { shouldDeleteTorrent, deleteTorrentFile } from '@/composables/useDownloadCleanup'
 import type { MagnetFileItem } from '@/composables/useMagnetFlow'
-import type { Aria2Task } from '@shared/types'
-import { TASK_STATUS } from '@shared/constants'
+import { getTaskName } from '@shared/utils'
 import { ARIA2_ERROR_CODES } from '@shared/aria2ErrorCodes'
 import { logger } from '@shared/logger'
-import { useDialog, NCheckbox } from 'naive-ui'
+import { useDialog } from 'naive-ui'
 import { useAppMessage } from '@/composables/useAppMessage'
 import TaskList from '@/components/task/TaskList.vue'
 import TaskActions from '@/components/task/TaskActions.vue'
@@ -42,6 +38,25 @@ const message = useAppMessage()
 
 const stoppingGids = ref<string[]>([])
 provide('stoppingGids', stoppingGids)
+
+const {
+  handlePauseTask,
+  handleResumeTask,
+  handleDeleteTask,
+  handleDeleteRecord,
+  handleCopyLink,
+  handleShowInfo,
+  handleShowInFolder,
+  handleOpenFile,
+  handleStopSeeding,
+} = useTaskActions({
+  taskStore,
+  preferenceConfig: () => preferenceStore.config,
+  t,
+  dialog,
+  message,
+  stoppingGids,
+})
 
 // ── Magnet file selection state ──────────────────────────────────────
 const magnetSelectVisible = ref(false)
@@ -234,181 +249,7 @@ async function handleMagnetCancel() {
   }
 }
 
-// File deletion handled by @/composables/useFileDelete
-function handlePauseTask(task: Aria2Task) {
-  const taskName = getTaskName(task, { defaultName: 'Unknown' })
-  taskStore
-    .pauseTask(task)
-    .then(() => message.success(t('task.pause-task-success', { taskName })))
-    .catch(() => message.error(t('task.pause-task-fail', { taskName })))
-}
-function handleResumeTask(task: Aria2Task) {
-  const taskName = getTaskName(task, { defaultName: 'Unknown' })
-  const { COMPLETE, ERROR, REMOVED } = TASK_STATUS
-  if (task.status === ERROR || task.status === COMPLETE || task.status === REMOVED) {
-    // Stopped tasks cannot be unpause'd — restart by re-adding the URI
-    taskStore
-      .restartTask(task)
-      .then(() => message.success(t('task.restart-task-success', { taskName })))
-      .catch(() => message.error(t('task.restart-task-fail', { taskName })))
-  } else {
-    taskStore
-      .resumeTask(task)
-      .then(() => message.success(t('task.resume-task-success', { taskName })))
-      .catch(() => message.error(t('task.resume-task-fail', { taskName })))
-  }
-}
-function handleDeleteTask(task: Aria2Task) {
-  const noConfirm = preferenceStore.config?.noConfirmBeforeDeleteTask
-  if (noConfirm) {
-    taskStore.removeTask(task).catch((e) => logger.error('TaskView', e))
-    return
-  }
-  const deleteFiles = ref(false)
-  const name = getTaskName(task, { defaultName: 'Unknown' })
-  const d = dialog.warning({
-    title: t('task.delete-task'),
-    content: () =>
-      h('div', {}, [
-        h('p', { style: 'margin: 0 0 12px; word-break: break-all;' }, name),
-        h(
-          NCheckbox,
-          {
-            checked: deleteFiles.value,
-            'onUpdate:checked': (v: boolean) => {
-              deleteFiles.value = v
-            },
-          },
-          { default: () => t('task.delete-task-label') },
-        ),
-      ]),
-    positiveText: t('app.yes'),
-    negativeText: t('app.no'),
-    onPositiveClick: async () => {
-      d.loading = true
-      d.negativeButtonProps = { disabled: true }
-      d.closable = false
-      d.maskClosable = false
-      // Yield to browser so the loading spinner renders before heavy IPC work
-      await new Promise((r) => setTimeout(r, 50))
-      try {
-        await taskStore.removeTask(task)
-        if (deleteFiles.value) {
-          await deleteTaskFiles(task)
-        }
-        message.success(t('task.delete-task-success', { taskName: name }))
-      } catch (e) {
-        logger.error('TaskView.deleteTask', e)
-        message.error(t('task.delete-task-fail', { taskName: name }))
-      }
-    },
-  })
-}
-function handleDeleteRecord(task: Aria2Task) {
-  const noConfirm = preferenceStore.config?.noConfirmBeforeDeleteTask
-  if (noConfirm) {
-    taskStore
-      .removeTaskRecord(task)
-      .then(() =>
-        message.success(t('task.remove-record-success', { taskName: getTaskName(task, { defaultName: 'Unknown' }) })),
-      )
-      .catch((e) => logger.error('TaskView.deleteRecord', e))
-    return
-  }
-  const deleteFiles = ref(false)
-  const name = getTaskName(task, { defaultName: 'Unknown' })
-  const d = dialog.warning({
-    title: t('task.delete-task'),
-    content: () =>
-      h('div', {}, [
-        h('p', { style: 'margin: 0 0 12px; word-break: break-all;' }, name),
-        h(
-          NCheckbox,
-          {
-            checked: deleteFiles.value,
-            'onUpdate:checked': (v: boolean) => {
-              deleteFiles.value = v
-            },
-          },
-          { default: () => t('task.delete-task-label') },
-        ),
-      ]),
-    positiveText: t('app.yes'),
-    negativeText: t('app.no'),
-    onPositiveClick: async () => {
-      d.loading = true
-      d.negativeButtonProps = { disabled: true }
-      d.closable = false
-      d.maskClosable = false
-      await new Promise((r) => setTimeout(r, 50))
-      try {
-        if (deleteFiles.value) {
-          await deleteTaskFiles(task)
-        }
-        await taskStore.removeTaskRecord(task)
-        message.success(t('task.delete-task-success', { taskName: name }))
-      } catch (e) {
-        logger.error('TaskView.deleteRecord', e)
-        message.error(t('task.delete-task-fail', { taskName: name }))
-      }
-    },
-  })
-}
-function handleCopyLink(task: Aria2Task) {
-  navigator.clipboard.writeText(getTaskUri(task))
-  message.success(t('task.copy-link-success'))
-}
-function handleShowInfo(task: Aria2Task) {
-  taskStore.showTaskDetail(task)
-}
-async function handleShowInFolder(task: Aria2Task) {
-  const files = task.files || []
-  const filePath = files[0]?.path
-  if (!filePath) return
-  const fileExists = await exists(filePath)
-  if (!fileExists) {
-    message.warning(t('task.file-not-exist'))
-    return
-  }
-  try {
-    await revealItemInDir(filePath)
-    message.success(t('task.open-folder-success'))
-  } catch (e) {
-    logger.debug('TaskView.showInFolder', e)
-    message.warning(t('task.file-not-exist'))
-  }
-}
-async function handleOpenFile(task: Aria2Task) {
-  const target = resolveOpenTarget(task)
-  if (!target) return
-  const fileExists = await exists(target)
-  if (!fileExists) {
-    message.warning(t('task.file-not-exist'))
-    return
-  }
-  try {
-    const info = await stat(target)
-    await openPath(target)
-    message.success(t(info.isDirectory ? 'task.open-folder-success' : 'task.open-file-success'))
-  } catch (e) {
-    logger.debug('TaskView.openFile error', e)
-    message.warning(t('task.file-not-exist'))
-  }
-}
-async function handleStopSeeding(task: Aria2Task) {
-  if (stoppingGids.value.includes(task.gid)) return // prevent double-click
-  stoppingGids.value = [...stoppingGids.value, task.gid]
-  try {
-    await taskStore.stopSeeding(task)
-    stoppingGids.value = stoppingGids.value.filter((g) => g !== task.gid)
-    message.success(t('task.stop-seeding-success'))
-    // Refresh list immediately so the task vanishes from the active tab
-    await taskStore.fetchList()
-  } catch (e) {
-    logger.warn('[TaskView] stopSeeding failed:', String(e))
-    stoppingGids.value = stoppingGids.value.filter((g) => g !== task.gid)
-  }
-}
+// Task action handlers are now provided by useTaskActions composable above.
 </script>
 
 <template>

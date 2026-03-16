@@ -115,7 +115,12 @@ describe('Gap 3: Diagnostic log export', () => {
     })
 
     it('the button invokes the export_diagnostic_logs command', () => {
-      expect(advancedVueSource).toContain('export_diagnostic_logs')
+      // The invoke call was extracted from Advanced.vue to useAdvancedActions composable
+      const composableSource = fs.readFileSync(
+        path.join(SRC_ROOT, 'src', 'composables', 'useAdvancedActions.ts'),
+        'utf-8',
+      )
+      expect(composableSource).toContain('export_diagnostic_logs')
     })
   })
 

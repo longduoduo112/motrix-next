@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** @fileoverview Advanced preference form: proxy, tracker, RPC, port, and user-agent settings. */
-import { ref, h, computed, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { usePreferenceStore } from '@/stores/preference'
@@ -8,10 +8,10 @@ import { usePreferenceForm } from '@/composables/usePreferenceForm'
 import { useEngineRestart } from '@/composables/useEngineRestart'
 import { useTaskStore } from '@/stores/task'
 import { useHistoryStore } from '@/stores/history'
+import { useAdvancedActions } from '@/composables/useAdvancedActions'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { useIpc } from '@/composables/useIpc'
-import { appDataDir, downloadDir, join, resolveResource } from '@tauri-apps/api/path'
-import { save as saveDialog } from '@tauri-apps/plugin-dialog'
+import { appDataDir, join, resolveResource } from '@tauri-apps/api/path'
 import { LOG_LEVELS, PROXY_SCOPE_OPTIONS } from '@shared/constants'
 import { convertTrackerDataToLine } from '@shared/utils/tracker'
 import {
@@ -33,7 +33,6 @@ import {
   NInputGroup,
   NSwitch,
   NSelect,
-  NTag,
   NButton,
   NButtonGroup,
   NSpace,
@@ -43,116 +42,24 @@ import {
   NDataTable,
   NEmpty,
   useDialog,
-  type DataTableColumns,
 } from 'naive-ui'
 import { useAppMessage } from '@/composables/useAppMessage'
 import { SyncOutline, DiceOutline, RefreshOutline, DownloadOutline } from '@vicons/ionicons5'
 import { logger } from '@shared/logger'
 import PreferenceActionBar from './PreferenceActionBar.vue'
+import { trackerSourceOptions } from '@shared/constants/trackerSources'
 
 const { restartEngine } = useEngineRestart()
 
 const { t } = useI18n()
 const preferenceStore = usePreferenceStore()
 const taskStore = useTaskStore()
+const historyStore = useHistoryStore()
 const message = useAppMessage()
 const dialog = useDialog()
 
 import { DEFAULT_TRACKER_SOURCE, ENGINE_RPC_PORT } from '@shared/constants'
 import { diffConfig, checkIsNeedRestart } from '@shared/utils/config'
-import { bytesToSize } from '@shared/utils/format'
-
-const trackerSourceOptions = [
-  {
-    type: 'group' as const,
-    label: 'ngosang/trackerslist',
-    key: 'ngosang',
-    children: [
-      {
-        label: 'trackers_best.txt',
-        value: 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt',
-      },
-      {
-        label: 'trackers_best_ip.txt',
-        value: 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best_ip.txt',
-      },
-      {
-        label: 'trackers_all.txt',
-        value: 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all.txt',
-      },
-      {
-        label: 'trackers_all_ip.txt',
-        value: 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all_ip.txt',
-      },
-      {
-        label: () =>
-          h('span', {}, [
-            h('span', {}, 'trackers_best.txt '),
-            h(NTag, { size: 'tiny', type: 'warning', bordered: false }, { default: () => 'CDN' }),
-          ]),
-        value: 'https://cdn.jsdelivr.net/gh/ngosang/trackerslist/trackers_best.txt',
-      },
-      {
-        label: () =>
-          h('span', {}, [
-            h('span', {}, 'trackers_best_ip.txt '),
-            h(NTag, { size: 'tiny', type: 'warning', bordered: false }, { default: () => 'CDN' }),
-          ]),
-        value: 'https://cdn.jsdelivr.net/gh/ngosang/trackerslist/trackers_best_ip.txt',
-      },
-      {
-        label: () =>
-          h('span', {}, [
-            h('span', {}, 'trackers_all.txt '),
-            h(NTag, { size: 'tiny', type: 'warning', bordered: false }, { default: () => 'CDN' }),
-          ]),
-        value: 'https://cdn.jsdelivr.net/gh/ngosang/trackerslist/trackers_all.txt',
-      },
-      {
-        label: () =>
-          h('span', {}, [
-            h('span', {}, 'trackers_all_ip.txt '),
-            h(NTag, { size: 'tiny', type: 'warning', bordered: false }, { default: () => 'CDN' }),
-          ]),
-        value: 'https://cdn.jsdelivr.net/gh/ngosang/trackerslist/trackers_all_ip.txt',
-      },
-    ],
-  },
-  {
-    type: 'group' as const,
-    label: 'XIU2/TrackersListCollection',
-    key: 'xiu2',
-    children: [
-      { label: 'best.txt', value: 'https://raw.githubusercontent.com/XIU2/TrackersListCollection/master/best.txt' },
-      { label: 'all.txt', value: 'https://raw.githubusercontent.com/XIU2/TrackersListCollection/master/all.txt' },
-      { label: 'http.txt', value: 'https://raw.githubusercontent.com/XIU2/TrackersListCollection/master/http.txt' },
-      {
-        label: () =>
-          h('span', {}, [
-            h('span', {}, 'best.txt '),
-            h(NTag, { size: 'tiny', type: 'warning', bordered: false }, { default: () => 'CDN' }),
-          ]),
-        value: 'https://cdn.jsdelivr.net/gh/XIU2/TrackersListCollection/best.txt',
-      },
-      {
-        label: () =>
-          h('span', {}, [
-            h('span', {}, 'all.txt '),
-            h(NTag, { size: 'tiny', type: 'warning', bordered: false }, { default: () => 'CDN' }),
-          ]),
-        value: 'https://cdn.jsdelivr.net/gh/XIU2/TrackersListCollection/all.txt',
-      },
-      {
-        label: () =>
-          h('span', {}, [
-            h('span', {}, 'http.txt '),
-            h(NTag, { size: 'tiny', type: 'warning', bordered: false }, { default: () => 'CDN' }),
-          ]),
-        value: 'https://cdn.jsdelivr.net/gh/XIU2/TrackersListCollection/http.txt',
-      },
-    ],
-  },
-]
 
 const proxyScopeOptions = PROXY_SCOPE_OPTIONS.map((s: string) => ({
   label: t(`preferences.proxy-scope-${s}`),
@@ -323,220 +230,35 @@ function changeUA(type: string) {
   if (ua) form.value.userAgent = ua
 }
 
+// ─── Advanced Actions (delegated to composable) ─────────────────────
+
+const {
+  showDbBrowse,
+  dbRecords,
+  dbRecordsLoading,
+  dbBrowseColumns,
+  exportingLogs,
+  handleManualRestart: handleManualRestartAction,
+  handleSessionReset,
+  handleRestoreDefaults,
+  handleFactoryReset,
+  handleDbIntegrityCheck,
+  handleDbBrowse,
+  handleDbReset,
+  handleExportLogs,
+} = useAdvancedActions({
+  t,
+  message,
+  taskStore,
+  historyStore,
+  preferenceStore,
+  form,
+  buildForm,
+  resetSnapshot,
+})
+
 function handleManualRestart() {
-  const port = form.value.rpcListenPort || ENGINE_RPC_PORT
-  const secret = form.value.rpcSecret || ''
-  const d = dialog.warning({
-    title: t('preferences.engine-restart-title'),
-    content: t('preferences.engine-restart-manual-confirm'),
-    positiveText: t('preferences.engine-restart-now'),
-    negativeText: t('preferences.engine-restart-later'),
-    maskClosable: false,
-    onPositiveClick: async () => {
-      d.loading = true
-      d.negativeText = ''
-      d.closable = false
-      message.info(t('preferences.engine-restarting'), { duration: 2000 })
-      await nextTick()
-      await new Promise((r) => requestAnimationFrame(r))
-      await restartEngine({ port, secret })
-    },
-  })
-}
-
-function handleSessionReset() {
-  dialog.warning({
-    title: t('preferences.session-reset'),
-    content: t('preferences.session-reset-confirm'),
-    positiveText: t('app.yes'),
-    negativeText: t('app.no'),
-    onPositiveClick: async () => {
-      try {
-        // Fetch ALL tasks from aria2 across every category.
-        // taskStore.taskList only holds the currently displayed tab,
-        // so we query aria2 directly to get the complete queue.
-        const { fetchTaskList } = await import('@/api/aria2')
-        const [activeTasks, stoppedTasks] = await Promise.all([
-          fetchTaskList({ type: 'active' }),
-          fetchTaskList({ type: 'stopped' }),
-        ])
-        const allGids = [...activeTasks, ...stoppedTasks].map((t) => t.gid)
-        // Force-remove all tasks from aria2's in-memory queue.
-        // Without this, tasks stay in memory and the 10-second
-        // save-session-interval writes them back to disk.
-        if (allGids.length > 0) {
-          await taskStore.batchRemoveTask(allGids)
-        }
-        // Purge any remaining stopped download results from aria2.
-        await taskStore.purgeTaskRecord()
-        // Delete the session file itself.
-        await invoke('clear_session_file')
-        message.success(t('preferences.session-reset'))
-      } catch (e) {
-        logger.error('Advanced.sessionReset', e)
-      }
-    },
-  })
-}
-
-function handleRestoreDefaults() {
-  dialog.warning({
-    title: t('preferences.restore-defaults'),
-    content: t('preferences.restore-defaults-confirm'),
-    positiveText: t('preferences.restore-defaults'),
-    negativeText: t('app.cancel'),
-    onPositiveClick: async () => {
-      const ok = await preferenceStore.resetToDefaults()
-      if (ok) {
-        Object.assign(form.value, buildForm())
-        resetSnapshot()
-        message.success(t('preferences.restore-defaults-success'))
-        dialog.info({
-          title: t('preferences.restore-defaults'),
-          content: t('preferences.restart-required'),
-          positiveText: t('preferences.restart-now'),
-          negativeText: t('app.cancel'),
-          onPositiveClick: async () => {
-            const { stopEngine } = useIpc()
-            await stopEngine()
-            relaunch()
-          },
-        })
-      }
-    },
-  })
-}
-
-function handleFactoryReset() {
-  dialog.error({
-    title: t('preferences.factory-reset'),
-    content: t('preferences.factory-reset-confirm'),
-    positiveText: t('app.yes'),
-    negativeText: t('app.no'),
-    onPositiveClick: async () => {
-      try {
-        await invoke('factory_reset')
-        const { stopEngine } = useIpc()
-        await stopEngine()
-        relaunch()
-      } catch (e) {
-        logger.error('Advanced.factoryReset', e)
-      }
-    },
-  })
-}
-
-/** Check download history database integrity via PRAGMA integrity_check. */
-async function handleDbIntegrityCheck() {
-  const historyStore = useHistoryStore()
-  message.info(t('preferences.db-integrity-check-running'))
-  try {
-    const result = await historyStore.checkIntegrity()
-    if (result === 'ok') {
-      message.success(t('preferences.db-integrity-check-ok'))
-    } else {
-      message.warning(`${t('preferences.db-integrity-check-fail')}: ${result}`)
-    }
-  } catch (e) {
-    message.error(`${t('preferences.db-integrity-check-fail')}: ${(e as Error).message}`)
-    logger.error('Advanced.dbIntegrityCheck', e)
-  }
-}
-
-/** Browse database records — open modal with NDataTable. */
-const showDbBrowse = ref(false)
-const dbRecords = ref<import('@shared/types').HistoryRecord[]>([])
-const dbRecordsLoading = ref(false)
-
-const STATUS_I18N_MAP: Record<string, string> = {
-  complete: 'task.task-complete',
-  error: 'task.task-error',
-  removed: 'task.task-removed',
-}
-
-const dbBrowseColumns = computed<DataTableColumns<import('@shared/types').HistoryRecord>>(() => [
-  { title: t('task.task-name'), key: 'name', ellipsis: { tooltip: true }, minWidth: 200 },
-  {
-    title: t('task.task-status'),
-    key: 'status',
-    width: 100,
-    render: (row) =>
-      h(
-        NTag,
-        { type: row.status === 'complete' ? 'success' : row.status === 'error' ? 'error' : 'warning', size: 'small' },
-        () => t(STATUS_I18N_MAP[row.status] ?? 'task.task-removed'),
-      ),
-  },
-  {
-    title: t('task.task-file-size'),
-    key: 'total_length',
-    width: 100,
-    render: (row) => (row.total_length ? bytesToSize(row.total_length) : '—'),
-  },
-  { title: t('task.task-type'), key: 'task_type', width: 90 },
-  {
-    title: t('task.task-completed-at'),
-    key: 'completed_at',
-    width: 170,
-    render: (row) => (row.completed_at ? new Date(row.completed_at).toLocaleString() : '—'),
-  },
-])
-
-async function handleDbBrowse() {
-  const historyStore = useHistoryStore()
-  showDbBrowse.value = true
-  dbRecordsLoading.value = true
-  try {
-    dbRecords.value = await historyStore.getRecords()
-  } catch (e) {
-    logger.error('Advanced.dbBrowse', e)
-    message.error((e as Error).message)
-  } finally {
-    dbRecordsLoading.value = false
-  }
-}
-
-/** Reset (clear) the download history database with destructive confirmation. */
-function handleDbReset() {
-  const historyStore = useHistoryStore()
-  dialog.error({
-    title: t('preferences.db-reset'),
-    content: t('preferences.db-reset-confirm'),
-    positiveText: t('app.yes'),
-    negativeText: t('app.no'),
-    onPositiveClick: async () => {
-      try {
-        await historyStore.clearRecords()
-        message.success(t('preferences.db-reset-success'))
-      } catch (e) {
-        message.error(`${t('preferences.db-reset')}: ${(e as Error).message}`)
-        logger.error('Advanced.dbReset', e)
-      }
-    },
-  })
-}
-
-const exportingLogs = ref(false)
-
-async function handleExportLogs() {
-  try {
-    const defaultDir = await downloadDir()
-    const savePath = await saveDialog({
-      title: t('preferences.export-diagnostic-logs'),
-      defaultPath: `${defaultDir}/motrix-next-logs.zip`,
-      filters: [{ name: 'ZIP', extensions: ['zip'] }],
-    })
-    if (!savePath) return // user cancelled
-
-    exportingLogs.value = true
-    const zipPath = await invoke<string>('export_diagnostic_logs', { savePath })
-    message.success(t('preferences.export-diagnostic-logs-success', { path: zipPath }))
-  } catch (e) {
-    logger.error('Advanced.exportLogs', e)
-    message.error(t('preferences.export-diagnostic-logs-failed'))
-  } finally {
-    exportingLogs.value = false
-  }
+  handleManualRestartAction(form.value.rpcListenPort as number, form.value.rpcSecret as string)
 }
 
 onMounted(() => {
