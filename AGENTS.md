@@ -311,7 +311,7 @@ Two parallel jobs:
 
 ### `release.yml` (Release Published)
 
-1. **Build job** — Matrix: `macos-latest` (×2: aarch64 + x86_64 cross-compile), `windows-latest` (×2: x64 + aarch64 cross-compile), `ubuntu-latest`, `ubuntu-24.04-arm`
+1. **Build job** — Matrix: `macos-latest` (aarch64), `macos-13` (x86_64), `windows-latest` (×2: x64 + aarch64 cross-compile), `ubuntu-latest`, `ubuntu-24.04-arm`
 2. **merge-updater-json job** — Detects channel from tag name → generates `latest.json` or `beta.json` with 6 platform keys → uploads to `updater` tag
 
 ---

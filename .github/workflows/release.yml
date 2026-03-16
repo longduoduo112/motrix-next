@@ -19,16 +19,22 @@ jobs:
         include:
           - platform: macos-latest
             args: --target aarch64-apple-darwin
-          - platform: macos-latest
+            label: macos-aarch64
+          - platform: macos-13
             args: --target x86_64-apple-darwin
+            label: macos-x86_64
           - platform: windows-latest
             args: --target x86_64-pc-windows-msvc --bundles nsis
+            label: windows-x86_64
           - platform: windows-latest
             args: --target aarch64-pc-windows-msvc --bundles nsis
+            label: windows-aarch64
           - platform: ubuntu-latest
             args: --target x86_64-unknown-linux-gnu
+            label: linux-x86_64
           - platform: ubuntu-24.04-arm
             args: --target aarch64-unknown-linux-gnu
+            label: linux-aarch64
 
     runs-on: ${{ matrix.platform }}
 
@@ -46,10 +52,10 @@ jobs:
 
       # Cross-compilation: add the secondary Rust target when building for
       # a different architecture on the same OS runner.
+      # - macOS x86_64 uses a native Intel runner (macos-13), no cross-compile needed.
+      # - Windows ARM64 cross-compiles on x64 runner (NSIS is arch-agnostic).
       - name: Add cross-compilation target
-        if: |
-          contains(matrix.args, 'x86_64-apple-darwin') ||
-          contains(matrix.args, 'aarch64-pc-windows-msvc')
+        if: contains(matrix.args, 'aarch64-pc-windows-msvc')
         shell: bash
         run: |
           TARGET=$(echo '${{ matrix.args }}' | sed 's/.*--target \([^ ]*\).*/\1/')
@@ -88,7 +94,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v6
         with:
-          name: motrix-next-${{ matrix.platform }}
+          name: motrix-next-${{ matrix.label }}
           path: "${{ join(fromJSON(steps.tauri.outputs.artifactPaths), '\n') }}"
           retention-days: 7
 
