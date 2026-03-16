@@ -49,7 +49,6 @@ Motrix Next is a ground-up rewrite — same download manager spirit, entirely ne
 | **Bundle Size** | ~80 MB | **~20 MB** |
 | **Auto-Update** | electron-updater | **Tauri updater plugin** |
 
-> [!IMPORTANT]
 > **6-platform aria2 engine** — the [official aria2 release](https://github.com/aria2/aria2/releases) only ships Windows 32/64-bit and Android ARM64 pre-built binaries. We [compile aria2 from source](https://github.com/AnInsomniacy/aria2-builder) as fully static binaries for all 6 targets: macOS (Apple Silicon / Intel), Windows (x64 / ARM64), and Linux (x64 / ARM64).
 
 
