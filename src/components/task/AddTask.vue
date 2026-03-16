@@ -17,11 +17,15 @@ import {
 } from '@/composables/useAddTaskSubmit'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { downloadDir } from '@tauri-apps/api/path'
-import { readFile } from '@tauri-apps/plugin-fs'
 import { logger } from '@shared/logger'
-import { parseTorrentBuffer, uint8ToBase64 } from '@/composables/useTorrentParser'
-import { detectKind, createBatchItem } from '@shared/utils/batchHelpers'
-import bencode from 'bencode'
+
+import {
+  onBatchItemBeforeEnter,
+  onBatchItemEnter,
+  onBatchItemLeave,
+  createBatchItemAfterLeave,
+} from '@/composables/useAddTaskAnimations'
+import { resolveUnresolvedItems, chooseTorrentFile as chooseTorrentFileImpl } from '@/composables/useAddTaskFileOps'
 import {
   NModal,
   NCard,
@@ -165,12 +169,15 @@ watch(
 
     if (hasBatch.value) {
       // Resolve file-based items and auto-switch tab
-      await resolveUnresolvedItems()
+      await localResolveUnresolvedItems()
       // Flush URI batch items into the editable textarea via normalized merge
       const uriItems = batch.value.filter((i) => i.kind === 'uri')
       if (uriItems.length > 0) {
-        mergeUrisIntoForm(uriItems.map((i) => i.payload))
-        drainUriItemsFromBatch()
+        form.value.uris = mergeUriLines(
+          form.value.uris,
+          uriItems.map((i) => i.payload),
+        )
+        appStore.pendingBatch = batch.value.filter((i) => i.kind !== 'uri')
       }
       if (fileItems.value.length > 0) {
         activeTab.value = ADD_TASK_TYPE.TORRENT
@@ -201,63 +208,37 @@ watch(
     // Flush any newly added URI items via normalized merge (dedup against existing)
     const uriItems = batch.value.filter((i) => i.kind === 'uri')
     if (uriItems.length > 0) {
-      mergeUrisIntoForm(uriItems.map((i) => i.payload))
-      drainUriItemsFromBatch()
+      form.value.uris = mergeUriLines(
+        form.value.uris,
+        uriItems.map((i) => i.payload),
+      )
+      appStore.pendingBatch = batch.value.filter((i) => i.kind !== 'uri')
     }
-    await resolveUnresolvedItems()
+    await localResolveUnresolvedItems()
     if (fileItems.value.length > 0) {
       activeTab.value = ADD_TASK_TYPE.TORRENT
     }
   },
 )
 
-// ── URI normalization helpers ────────────────────────────────────────
+// ── File resolution (delegated to useAddTaskFileOps) ────────────────
 
-/** Merge incoming URIs into form.uris with order-preserving dedup. Delegates to shared helper. */
-function mergeUrisIntoForm(incoming: string[]): void {
-  form.value.uris = mergeUriLines(form.value.uris, incoming)
+async function localResolveUnresolvedItems() {
+  await resolveUnresolvedItems(batch.value, t)
 }
 
-/** Remove all URI-kind items from pendingBatch, keeping file items intact. */
-function drainUriItemsFromBatch(): void {
-  appStore.pendingBatch = batch.value.filter((i) => i.kind !== 'uri')
+async function chooseTorrentFile() {
+  await chooseTorrentFileImpl({
+    t,
+    batch,
+    fileItems,
+    selectedBatchIndex,
+    setPendingBatch: (items) => {
+      appStore.pendingBatch = items
+    },
+    showWarning: (msg) => message.warning(msg),
+  })
 }
-
-// ── File resolution ─────────────────────────────────────────────────
-
-async function resolveUnresolvedItems() {
-  for (const item of batch.value) {
-    if (item.kind !== 'uri' && item.status === 'pending' && item.payload === item.source) {
-      await resolveFileItem(item)
-    }
-  }
-}
-
-async function resolveFileItem(item: BatchItem) {
-  try {
-    const bytes = await readFile(item.source)
-    const uint8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
-    item.payload = uint8ToBase64(uint8)
-
-    if (item.kind === 'torrent') {
-      try {
-        const meta = await parseTorrentBuffer(uint8, bencode)
-        if (meta) {
-          item.torrentMeta = meta
-          item.selectedFileIndices = meta.files.map((f) => f.idx)
-        }
-      } catch (e) {
-        logger.debug('AddTask.parseTorrent', e)
-      }
-    }
-  } catch (e) {
-    logger.error('AddTask.resolveFileItem', e)
-    item.status = 'failed'
-    item.error = t('task.file-load-failed')
-  }
-}
-
-// ── File chooser ────────────────────────────────────────────────────
 
 async function chooseDirectory() {
   try {
@@ -268,112 +249,28 @@ async function chooseDirectory() {
   }
 }
 
-async function chooseTorrentFile() {
-  try {
-    const selected = await openDialog({
-      multiple: true,
-      filters: [{ name: 'Torrent / Metalink', extensions: ['torrent', 'metalink', 'meta4'] }],
-    })
-    const paths = typeof selected === 'string' ? [selected] : Array.isArray(selected) ? selected : []
-    if (paths.length === 0) return
-
-    // Deduplicate: skip files already in the batch by source path
-    const existingSources = new Set(batch.value.map((i) => i.source))
-    const newPaths = paths.filter((p) => !existingSources.has(p))
-    if (newPaths.length === 0) {
-      message.warning(t('task.duplicate-task'))
-      return
-    }
-    if (newPaths.length < paths.length) {
-      message.warning(t('task.duplicate-task'))
-    }
-
-    const items = newPaths.map((p) => createBatchItem(detectKind(p), p))
-    for (const item of items) {
-      await resolveFileItem(item)
-    }
-    appStore.pendingBatch = [...appStore.pendingBatch, ...items]
-    selectedBatchIndex.value = Math.max(0, fileItems.value.length - 1)
-  } catch (e) {
-    logger.debug('AddTask.chooseTorrentFile', e)
-  }
-}
-
 function removeBatchItem(item: BatchItem) {
   appStore.pendingBatch = batch.value.filter((i) => i !== item)
   selectedBatchIndex.value = Math.min(selectedBatchIndex.value, Math.max(0, fileItems.value.length - 1))
 }
 
-// ── Batch item TransitionGroup JS hooks (bypass CSS specificity) ────
+// ── Batch item animation hooks (delegated to useAddTaskAnimations) ──
 
-/** M3 emphasized decelerate easing for enter animations. */
-const M3_DECELERATE = 'cubic-bezier(0.2, 0, 0, 1)'
-/** M3 accelerate easing for exit animations. */
-const M3_ACCELERATE = 'cubic-bezier(0.3, 0, 0.8, 0.15)'
-
-function onBatchItemBeforeEnter(el: Element) {
-  const htmlEl = el as HTMLElement
-  htmlEl.style.opacity = '0'
-  htmlEl.style.transform = 'translateX(-12px)'
-}
-
-function onBatchItemEnter(el: Element, done: () => void) {
-  const htmlEl = el as HTMLElement
-  const anim = htmlEl.animate(
-    [
-      { opacity: 0, transform: 'translateX(-12px)' },
-      { opacity: 1, transform: 'translateX(0)' },
-    ],
-    { duration: 220, easing: M3_DECELERATE, fill: 'forwards' },
-  )
-  anim.onfinish = () => {
-    htmlEl.style.opacity = ''
-    htmlEl.style.transform = ''
-    done()
-  }
-}
-function onBatchItemAfterLeave() {
-  if (fileItems.value.length === 0 && batchListRef.value) {
-    const el = batchListRef.value
-    const h = el.offsetHeight
-    el.animate(
-      [
-        { height: `${h}px`, marginBottom: '8px', opacity: 1 },
-        { height: '0px', marginBottom: '0px', opacity: 0 },
-      ],
-      { duration: 150, easing: M3_ACCELERATE, fill: 'forwards' },
-    ).onfinish = () => {
-      showBatchList.value = false
-      el.getAnimations().forEach((a) => a.cancel())
-    }
-  }
-}
-
-function onBatchItemLeave(el: Element, done: () => void) {
-  const htmlEl = el as HTMLElement
-  const startHeight = htmlEl.offsetHeight
-  htmlEl.style.overflow = 'hidden'
-  const anim = htmlEl.animate(
-    [
-      { opacity: 1, height: `${startHeight}px` },
-      { opacity: 0, height: '0px', paddingTop: '0px', paddingBottom: '0px' },
-    ],
-    { duration: 150, easing: M3_ACCELERATE, fill: 'forwards' },
-  )
-  anim.onfinish = done
-}
+const onBatchItemAfterLeave = createBatchItemAfterLeave(fileItems, batchListRef, showBatchList)
 
 // ── Submit ───────────────────────────────────────────────────────────
 
 function handleClose() {
   emit('close')
-  form.value.uris = ''
-  form.value.out = ''
-  form.value.userAgent = ''
-  form.value.authorization = ''
-  form.value.referer = ''
-  form.value.cookie = ''
-  form.value.allProxy = ''
+  Object.assign(form.value, {
+    uris: '',
+    out: '',
+    userAgent: '',
+    authorization: '',
+    referer: '',
+    cookie: '',
+    allProxy: '',
+  })
   submitting.value = false
   selectedBatchIndex.value = 0
   showBatchList.value = false
