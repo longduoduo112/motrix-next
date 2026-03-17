@@ -71,6 +71,13 @@ describe('buildAdvancedForm', () => {
     expect(generatedSecret).toBeNull()
   })
 
+  it('preserves explicitly empty secret without regenerating', () => {
+    const config = { rpcSecret: '' } as AppConfig
+    const { form, generatedSecret } = buildAdvancedForm(config)
+    expect(form.rpcSecret).toBe('')
+    expect(generatedSecret).toBeNull()
+  })
+
   it('preserves proxy configuration', () => {
     const config = {
       proxy: { enable: true, server: 'socks5://127.0.0.1:1080', bypass: '*.local', scope: ['download'] },

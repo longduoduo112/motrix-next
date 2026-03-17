@@ -50,9 +50,11 @@ export function generateSecret(): string {
  */
 export function buildAdvancedForm(config: AppConfig): { form: AdvancedForm; generatedSecret: string | null } {
   const proxy = config.proxy ?? D.proxy
-  const savedSecret = config.rpcSecret || ''
-  const rpcSecret = savedSecret || generateSecret()
-  const generatedSecret = savedSecret ? null : rpcSecret
+  // Distinguish "never set" (undefined/null → auto-generate) from
+  // "intentionally cleared" ('' → respect user choice).
+  const hasSecret = config.rpcSecret != null
+  const rpcSecret = hasSecret ? config.rpcSecret : generateSecret()
+  const generatedSecret = hasSecret ? null : rpcSecret
 
   return {
     form: {

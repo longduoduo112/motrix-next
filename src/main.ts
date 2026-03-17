@@ -235,9 +235,11 @@ window.addEventListener('unhandledrejection', (e) => {
 
     // ── Phase 2: engine startup (non-blocking) ────────────────────────────
     const port = config.rpcListenPort || ENGINE_RPC_PORT
-    let secret = config.rpcSecret || ''
+    // Distinguish "never set" (undefined/null → auto-generate) from
+    // "intentionally cleared" ('' → respect user choice).
+    let secret = config.rpcSecret
 
-    if (!secret) {
+    if (secret == null) {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
       const values = crypto.getRandomValues(new Uint8Array(16))
       secret = Array.from(values, (v) => chars[v % chars.length]).join('')
