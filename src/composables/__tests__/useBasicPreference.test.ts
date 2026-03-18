@@ -26,8 +26,8 @@ describe('buildBasicForm', () => {
     expect(form.maxConcurrentDownloads).toBe(5)
     expect(form.maxConnectionPerServer).toBe(ENGINE_DEFAULT_CONNECTION_PER_SERVER)
     expect(form.keepSeeding).toBe(false)
-    expect(form.seedRatio).toBe(1)
-    expect(form.seedTime).toBe(60)
+    expect(form.seedRatio).toBe(2)
+    expect(form.seedTime).toBe(2880)
     expect(form.continue).toBe(true)
   })
 

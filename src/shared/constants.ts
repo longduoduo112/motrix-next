@@ -89,8 +89,8 @@ export const DEFAULT_APP_CONFIG = {
   maxUploadLimit: '',
 
   // ── BitTorrent (qBT/Transmission/Deluge conventions) ──────────
-  seedRatio: 1, // Deluge=1, Transmission=2; 1:1 is BT community minimum etiquette
-  seedTime: 60, // Deluge=180min; 60min is beginner-friendly
+  seedRatio: 2, // old Motrix=2, Transmission=2; 2:1 supports BT ecosystem health
+  seedTime: 2880, // old Motrix=2880 (48h); generous default for healthy swarm contribution
   keepSeeding: false, // qBT stops at ratio; safer default for new users
   btSaveMetadata: true, // always save .torrent after metadata resolves for fast session restore
   btLoadSavedMetadata: true, // load cached .torrent on restart, skip DHT re-download
@@ -121,7 +121,7 @@ export const DEFAULT_APP_CONFIG = {
   lastCheckUpdateTime: 0,
 
   // ── Network & Security ────────────────────────────────────────
-  enableUpnp: false, // security consensus: UPnP has zero-auth design, default OFF
+  enableUpnp: true, // old Motrix=true; required for BitTorrent behind NAT
   rpcListenPort: ENGINE_RPC_PORT,
   // rpcSecret is intentionally ABSENT from defaults.
   // undefined → main.ts auto-generates on first launch.
@@ -130,8 +130,9 @@ export const DEFAULT_APP_CONFIG = {
   listenPort: 21301,
   dhtListenPort: 26701,
   proxy: { enable: false, server: '', bypass: '', scope: [] as string[] },
-  protocols: { magnet: false, thunder: false },
-  userAgent: '',
+  protocols: { magnet: true, thunder: false },
+  userAgent:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
   logLevel: 'debug', // captures full diagnostic output for bug reports out of the box
   cookie: '',
   runMode: '',

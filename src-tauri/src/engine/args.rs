@@ -1,8 +1,9 @@
 /// Builds the CLI argument list for spawning the aria2c sidecar process.
 ///
-/// Whitelists only valid aria2c options from the config object, enforces
-/// security rules (e.g., `--rpc-listen-all=false`), and handles the
-/// `keep-seeding` app-level flag.
+/// Whitelists only valid aria2c options from the config object and handles
+/// the `keep-seeding` app-level flag. Options managed exclusively by
+/// `aria2.conf` (e.g., `bt-save-metadata`, `rpc-listen-all`) are excluded
+/// from the whitelist to prevent store overrides.
 pub(crate) fn build_start_args(
     config: &serde_json::Value,
     conf_path: Option<&str>,
@@ -38,7 +39,6 @@ pub(crate) fn build_start_args(
         "bt-external-ip",
         "bt-force-encryption",
         "bt-hash-check-seed",
-        "bt-load-saved-metadata",
         "bt-max-peers",
         "bt-metadata-only",
         "bt-min-crypto-level",
@@ -46,7 +46,6 @@ pub(crate) fn build_start_args(
         "bt-remove-unselected-file",
         "bt-request-peer-speed-limit",
         "bt-require-crypto",
-        "bt-save-metadata",
         "bt-seed-unverified",
         "bt-stop-timeout",
         "bt-tracker-connect-timeout",
@@ -160,16 +159,6 @@ pub(crate) fn build_start_args(
                 continue;
             }
 
-            // Security: always force rpc-listen-all=false
-            if key == "rpc-listen-all" {
-                continue;
-            }
-
-            // Metadata persistence: always use conf file values (bt-save-metadata=true,
-            // bt-load-saved-metadata=true) — skip store overrides from legacy configs
-            if key == "bt-save-metadata" || key == "bt-load-saved-metadata" {
-                continue;
-            }
 
             // Handle keep-seeding: skip seed-time if keep_seeding is true
             if keep_seeding && key == "seed-time" {
@@ -204,9 +193,6 @@ pub(crate) fn build_start_args(
         args.push("--rpc-allow-origin-all=true".to_string());
     }
 
-    // Security: only listen on localhost
-    args.push("--rpc-listen-all=false".to_string());
-
     args
 }
 
@@ -232,16 +218,16 @@ mod tests {
     }
 
     #[test]
-    fn build_args_forces_rpc_listen_all_false() {
-        let config = json!({ "rpc-listen-all": "true" });
+    fn build_args_excludes_conf_only_keys() {
+        // bt-save-metadata and bt-load-saved-metadata are set in aria2.conf,
+        // not in the CLI whitelist — store values must never override them
+        let config = json!({
+            "bt-save-metadata": "false",
+            "bt-load-saved-metadata": "false"
+        });
         let args = build_start_args(&config, None, "/tmp/s.session", false);
-        // Must NOT pass the user's rpc-listen-all=true
-        let rpc_args: Vec<_> = args
-            .iter()
-            .filter(|a| a.contains("rpc-listen-all"))
-            .collect();
-        assert_eq!(rpc_args.len(), 1);
-        assert_eq!(rpc_args[0], "--rpc-listen-all=false");
+        assert!(!args.iter().any(|a| a.contains("bt-save-metadata")));
+        assert!(!args.iter().any(|a| a.contains("bt-load-saved-metadata")));
     }
 
     #[test]
@@ -351,12 +337,6 @@ mod tests {
         assert!(!args.iter().any(|a| a.starts_with("--conf-path")));
     }
 
-    #[test]
-    fn build_args_always_appends_rpc_listen_all_false() {
-        // Even with no config, security enforcement must be present
-        let args = build_start_args(&json!({}), None, "/tmp/s", false);
-        assert!(args.iter().any(|a| a == "--rpc-listen-all=false"));
-    }
 
     #[test]
     fn build_args_null_and_array_values_skipped() {
