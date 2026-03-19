@@ -67,9 +67,9 @@ async function close() {
 
 <template>
   <div class="window-controls" :class="{ 'mac-style': macStyle }">
-    <!-- macOS traffic light: close → minimize → fullscreen -->
-    <template v-if="macStyle">
-      <div class="traffic-lights" :class="{ blurred: !isFocused }">
+    <Transition name="ctrl-swap" mode="out-in">
+      <!-- macOS traffic light: close → minimize → fullscreen -->
+      <div v-if="macStyle" key="mac" class="traffic-lights" :class="{ blurred: !isFocused }">
         <button class="tl tl-close" title="Close" @click="close">
           <svg class="tl-icon" viewBox="0 0 12 12">
             <line x1="3.5" y1="3.5" x2="8.5" y2="8.5" />
@@ -82,7 +82,6 @@ async function close() {
           </svg>
         </button>
         <button class="tl tl-maximize" :title="isMaximized ? 'Restore' : 'Maximize'" @click="toggleMaximize">
-          <!-- Fullscreen arrows or restore arrows -->
           <svg v-if="!isMaximized" class="tl-icon" viewBox="0 0 12 12">
             <path d="M2.5 9L5 6.5M9.5 3L7 5.5" />
             <path d="M3 5.5V9H6.5M9 6.5V3H5.5" />
@@ -93,31 +92,54 @@ async function close() {
           </svg>
         </button>
       </div>
-    </template>
 
-    <!-- Windows / Linux: original icon buttons -->
-    <template v-else>
-      <button class="ctrl-btn" title="Minimize" @click="minimize">
-        <NIcon :size="14"><RemoveOutline /></NIcon>
-      </button>
-      <button class="ctrl-btn" :title="isMaximized ? 'Restore' : 'Maximize'" @click="toggleMaximize">
-        <NIcon :size="14">
-          <Transition name="icon-swap" mode="out-in">
-            <CopyOutline v-if="isMaximized" key="restore" />
-            <SquareOutline v-else key="maximize" />
-          </Transition>
-        </NIcon>
-      </button>
-      <button class="ctrl-btn close" title="Close" @click="close">
-        <NIcon :size="14"><CloseOutline /></NIcon>
-      </button>
-    </template>
+      <!-- Windows / Linux: original icon buttons -->
+      <div v-else key="win" class="win-buttons">
+        <button class="ctrl-btn" title="Minimize" @click="minimize">
+          <NIcon :size="14"><RemoveOutline /></NIcon>
+        </button>
+        <button class="ctrl-btn" :title="isMaximized ? 'Restore' : 'Maximize'" @click="toggleMaximize">
+          <NIcon :size="14">
+            <Transition name="icon-swap" mode="out-in">
+              <CopyOutline v-if="isMaximized" key="restore" />
+              <SquareOutline v-else key="maximize" />
+            </Transition>
+          </NIcon>
+        </button>
+        <button class="ctrl-btn close" title="Close" @click="close">
+          <NIcon :size="14"><CloseOutline /></NIcon>
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <style scoped>
+/* ── Style-switch cross-fade (M3 asymmetric timing) ──────────────── */
+.ctrl-swap-enter-active {
+  transition:
+    opacity 0.2s cubic-bezier(0.2, 0, 0, 1),
+    transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+.ctrl-swap-leave-active {
+  transition:
+    opacity 0.15s cubic-bezier(0.3, 0, 0.8, 0.15),
+    transform 0.15s cubic-bezier(0.3, 0, 0.8, 0.15);
+}
+.ctrl-swap-enter-from {
+  opacity: 0;
+  transform: scale(0.85);
+}
+.ctrl-swap-leave-to {
+  opacity: 0;
+  transform: scale(0.85);
+}
+
 /* ── Windows / Linux buttons ─────────────────────────────────────── */
-.window-controls:not(.mac-style) {
+.win-buttons {
+  position: fixed;
+  top: 6px;
+  right: 12px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -166,6 +188,9 @@ async function close() {
 
 /* ── macOS traffic-light buttons ─────────────────────────────────── */
 .traffic-lights {
+  position: fixed;
+  top: 12px;
+  left: 13px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -193,14 +218,17 @@ async function close() {
   background-color: #28c840;
 }
 
-/* SVG icons — hidden by default, revealed on group hover */
+/* SVG icons — hidden by default, pop-in on group hover */
 .tl-icon {
   position: absolute;
   inset: 0;
   width: 12px;
   height: 12px;
   opacity: 0;
-  transition: opacity 0.1s ease;
+  transform: scale(0);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1);
   fill: none;
   stroke: rgba(0, 0, 0, 0.5);
   stroke-width: 1.2;
@@ -209,6 +237,7 @@ async function close() {
 }
 .traffic-lights:hover .tl-icon {
   opacity: 1;
+  transform: scale(1);
 }
 
 /* Individual button press feedback */
