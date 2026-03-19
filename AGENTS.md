@@ -253,8 +253,6 @@ Examples: `v2.0.0 — Stability & Quality Release`, `v2.0.1 — Bug Fixes`, `v2.
 > [!CAUTION]
 > **Breaking change notice** (only if applicable)
 
----
-
 ## What's Changed
 
 One-paragraph summary of the release scope and significance.
