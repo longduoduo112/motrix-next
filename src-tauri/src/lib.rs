@@ -251,6 +251,43 @@ fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // ── Linux/NVIDIA: auto-disable DMABuf renderer before any thread spawn ──
+    //
+    // WORKAROUND for WebKitGTK Bug #262607 (RESOLVED WONTFIX).
+    // <https://bugs.webkit.org/show_bug.cgi?id=262607>
+    //
+    // NVIDIA proprietary drivers crash WebKitGTK's GBM EGL display init
+    // with "EGL_NOT_INITIALIZED", aborting the process before any window
+    // can open.  When the NVIDIA kernel module is loaded we proactively
+    // disable the DMABuf renderer so WebKitGTK falls back to software
+    // compositing.
+    //
+    // Detection: `/proc/driver/nvidia/version` is created by the nvidia.ko
+    // kernel module on load — its presence is a reliable, zero-dependency
+    // indicator that the NVIDIA proprietary driver is in use.
+    //
+    // The existing `is_dmabuf_renderer_disabled()` command in app.rs reads
+    // this same env var at runtime, so the frontend's border-radius
+    // workaround (MainLayout.vue) activates automatically.
+    //
+    // SAFETY: `set_var` is unsafe since Rust 1.83 due to potential data
+    // races in multi-threaded programs.  This call is safe because it
+    // executes at the very start of `main()`, before Tauri's thread pool,
+    // the async runtime, or any plugin initialisation.
+    #[cfg(target_os = "linux")]
+    {
+        if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err()
+            && std::path::Path::new("/proc/driver/nvidia/version").exists()
+        {
+            // SAFETY: single-threaded at this point — no data race possible.
+            unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1") };
+            eprintln!(
+                "[motrix-next] NVIDIA GPU detected — auto-set \
+                 WEBKIT_DISABLE_DMABUF_RENDERER=1 to prevent WebKitGTK EGL crash"
+            );
+        }
+    }
+
     // ── Panic hook: route panics through log crate for file persistence ──
     // Must be set BEFORE Tauri Builder so even plugin init panics are caught.
     // Without this, panics only reach stderr and are lost on process exit.
