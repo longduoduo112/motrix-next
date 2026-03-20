@@ -130,7 +130,7 @@ export const DEFAULT_APP_CONFIG = {
   // 'abc' → user-set or auto-generated secret (kept as-is).
   listenPort: 21301,
   dhtListenPort: 26701,
-  proxy: { enable: false, server: '', bypass: '', scope: [] as string[] },
+  proxy: { enable: false, server: '', bypass: '', scope: [] as string[] }, // backfilled below
   protocols: { magnet: true, thunder: false },
   userAgent:
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
@@ -282,6 +282,11 @@ export const PROXY_SCOPES = {
 }
 
 export const PROXY_SCOPE_OPTIONS = [PROXY_SCOPES.DOWNLOAD, PROXY_SCOPES.UPDATE_APP, PROXY_SCOPES.UPDATE_TRACKERS]
+
+// Backfill DEFAULT_APP_CONFIG.proxy.scope now that PROXY_SCOPE_OPTIONS is defined.
+// Same pattern as trackerSource (line 193). Without this, scope defaults to []
+// and buildAdvancedSystemConfig never populates all-proxy. (fixes #81)
+;(DEFAULT_APP_CONFIG.proxy as { scope: string[] }).scope = [...PROXY_SCOPE_OPTIONS]
 
 export const NONE_SELECTED_FILES = 'none'
 export const SELECTED_ALL_FILES = 'all'

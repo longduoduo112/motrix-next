@@ -16,7 +16,7 @@ import {
   randomDhtPort,
   type AdvancedForm,
 } from '../useAdvancedPreference'
-import { ENGINE_RPC_PORT, PROXY_SCOPES } from '@shared/constants'
+import { ENGINE_RPC_PORT, PROXY_SCOPES, PROXY_SCOPE_OPTIONS } from '@shared/constants'
 import { diffConfig } from '@shared/utils/config'
 import type { AppConfig } from '@shared/types'
 
@@ -50,7 +50,10 @@ describe('buildAdvancedForm', () => {
     const { form } = buildAdvancedForm(emptyConfig)
     expect(form.proxy.enable).toBe(false)
     expect(form.proxy.server).toBe('')
-    expect(form.proxy.scope).toEqual([])
+    // Default scope must include ALL scopes so proxy works on first enable
+    // (legacy Motrix behavior — scope defaults to PROXY_SCOPE_OPTIONS)
+    expect(form.proxy.scope).toEqual(expect.arrayContaining([PROXY_SCOPES.DOWNLOAD]))
+    expect(form.proxy.scope).toHaveLength(PROXY_SCOPE_OPTIONS.length)
     expect(form.rpcListenPort).toBe(ENGINE_RPC_PORT)
     expect(form.listenPort).toBe(21301)
     expect(form.dhtListenPort).toBe(26701)
@@ -296,5 +299,107 @@ describe('port randomizers', () => {
       expect(port).toBeGreaterThanOrEqual(25000)
       expect(port).toBeLessThan(29999)
     }
+  })
+})
+
+// ── Proxy Configuration Invariants ──────────────────────────────────
+
+describe('proxy configuration invariants', () => {
+  it('DEFAULT_APP_CONFIG.proxy.scope includes all PROXY_SCOPE_OPTIONS', () => {
+    // Regression guard: the root cause of #81 was scope defaulting to []
+    // instead of PROXY_SCOPE_OPTIONS, which silently disabled all proxy routing.
+    const { form } = buildAdvancedForm({} as AppConfig)
+    expect(form.proxy.scope).toEqual([...PROXY_SCOPE_OPTIONS])
+  })
+
+  it('buildAdvancedForm preserves user-selected subset of scopes', () => {
+    const config = {
+      proxy: { enable: true, server: 'http://127.0.0.1:7890', bypass: '', scope: [PROXY_SCOPES.DOWNLOAD] },
+    } as AppConfig
+    const { form } = buildAdvancedForm(config)
+    expect(form.proxy.scope).toEqual([PROXY_SCOPES.DOWNLOAD])
+  })
+
+  it('enabling proxy with default scope produces non-empty all-proxy', () => {
+    // End-to-end: the exact user flow from issue #81.
+    // 1. Fresh install → buildAdvancedForm({}) → form with default scope
+    // 2. User toggles enable=true and enters server
+    // 3. buildAdvancedSystemConfig → all-proxy MUST be the server value
+    const { form } = buildAdvancedForm({} as AppConfig)
+    form.proxy.enable = true
+    form.proxy.server = 'http://127.0.0.1:7890'
+    const systemConfig = buildAdvancedSystemConfig(form)
+    expect(systemConfig['all-proxy']).toBe('http://127.0.0.1:7890')
+    expect(systemConfig['no-proxy']).toBe('')
+  })
+
+  it('disabling proxy produces empty-string all-proxy (for clearing)', () => {
+    const form: AdvancedForm = {
+      proxy: { enable: false, server: 'http://127.0.0.1:7890', bypass: '', scope: [...PROXY_SCOPE_OPTIONS] },
+      trackerSource: [],
+      btTracker: '',
+      autoSyncTracker: false,
+      lastSyncTrackerTime: 0,
+      rpcListenPort: 16800,
+      rpcSecret: 'x',
+      enableUpnp: true,
+      listenPort: 21301,
+      dhtListenPort: 26701,
+      userAgent: '',
+      logLevel: 'debug',
+    }
+    const systemConfig = buildAdvancedSystemConfig(form)
+    // Empty string is intentional — aria2 accepts '' to clear the proxy
+    expect(systemConfig['all-proxy']).toBe('')
+    expect(systemConfig['no-proxy']).toBe('')
+  })
+
+  it('proxy with download scope excluded produces empty all-proxy', () => {
+    const form: AdvancedForm = {
+      proxy: {
+        enable: true,
+        server: 'http://127.0.0.1:7890',
+        bypass: '',
+        scope: [PROXY_SCOPES.UPDATE_APP, PROXY_SCOPES.UPDATE_TRACKERS],
+      },
+      trackerSource: [],
+      btTracker: '',
+      autoSyncTracker: false,
+      lastSyncTrackerTime: 0,
+      rpcListenPort: 16800,
+      rpcSecret: 'x',
+      enableUpnp: true,
+      listenPort: 21301,
+      dhtListenPort: 26701,
+      userAgent: '',
+      logLevel: 'debug',
+    }
+    const systemConfig = buildAdvancedSystemConfig(form)
+    expect(systemConfig['all-proxy']).toBe('')
+  })
+
+  it('proxy bypass value is forwarded to no-proxy when download scope active', () => {
+    const form: AdvancedForm = {
+      proxy: {
+        enable: true,
+        server: 'http://proxy:8080',
+        bypass: '192.168.0.0/16,*.local',
+        scope: [PROXY_SCOPES.DOWNLOAD],
+      },
+      trackerSource: [],
+      btTracker: '',
+      autoSyncTracker: false,
+      lastSyncTrackerTime: 0,
+      rpcListenPort: 16800,
+      rpcSecret: 'x',
+      enableUpnp: true,
+      listenPort: 21301,
+      dhtListenPort: 26701,
+      userAgent: '',
+      logLevel: 'debug',
+    }
+    const systemConfig = buildAdvancedSystemConfig(form)
+    expect(systemConfig['all-proxy']).toBe('http://proxy:8080')
+    expect(systemConfig['no-proxy']).toBe('192.168.0.0/16,*.local')
   })
 })
