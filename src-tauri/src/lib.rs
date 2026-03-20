@@ -473,6 +473,8 @@ pub fn run() {
             commands::is_autostart_launch,
             commands::clear_log_file,
             commands::export_diagnostic_logs,
+            commands::check_path_exists,
+            commands::check_path_is_dir,
             commands::trash_file,
             commands::get_engine_conf_path,
             commands::is_dmabuf_renderer_disabled,

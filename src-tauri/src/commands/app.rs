@@ -472,6 +472,70 @@ mod tests {
             "probeable"
         );
     }
+
+    // ── check_path_exists ──────────────────────────────────────────────
+
+    #[test]
+    fn check_path_exists_returns_true_for_existing_file() {
+        // Cargo.toml always exists at the workspace root when tests run
+        let path = env!("CARGO_MANIFEST_DIR").to_string() + "/Cargo.toml";
+        assert!(check_path_exists(path));
+    }
+
+    #[test]
+    fn check_path_exists_returns_true_for_existing_directory() {
+        let path = env!("CARGO_MANIFEST_DIR").to_string() + "/src";
+        assert!(check_path_exists(path));
+    }
+
+    #[test]
+    fn check_path_exists_returns_false_for_nonexistent_path() {
+        assert!(!check_path_exists(
+            "/definitely/does/not/exist/anywhere/file.txt".to_string()
+        ));
+    }
+
+    #[test]
+    fn check_path_exists_returns_false_for_empty_string() {
+        assert!(!check_path_exists(String::new()));
+    }
+
+    #[test]
+    fn check_path_exists_handles_path_with_spaces() {
+        // Create a temp file with spaces in the path
+        let dir = std::env::temp_dir().join("motrix test spaces");
+        let _ = std::fs::create_dir_all(&dir);
+        let file = dir.join("test file.txt");
+        let _ = std::fs::write(&file, "test");
+        assert!(check_path_exists(file.to_string_lossy().to_string()));
+        // Cleanup
+        let _ = std::fs::remove_file(&file);
+        let _ = std::fs::remove_dir(&dir);
+    }
+
+    // ── check_path_is_dir ──────────────────────────────────────────────
+
+    #[test]
+    fn check_path_is_dir_returns_true_for_directory() {
+        let path = env!("CARGO_MANIFEST_DIR").to_string() + "/src";
+        assert!(check_path_is_dir(path));
+    }
+
+    #[test]
+    fn check_path_is_dir_returns_false_for_file() {
+        let path = env!("CARGO_MANIFEST_DIR").to_string() + "/Cargo.toml";
+        assert!(!check_path_is_dir(path));
+    }
+
+    #[test]
+    fn check_path_is_dir_returns_false_for_nonexistent() {
+        assert!(!check_path_is_dir("/does/not/exist/whatsoever".to_string()));
+    }
+
+    #[test]
+    fn check_path_is_dir_returns_false_for_empty_string() {
+        assert!(!check_path_is_dir(String::new()));
+    }
 }
 
 /// Returns `true` when the current process was launched by the OS
@@ -563,6 +627,29 @@ pub async fn export_diagnostic_logs(app: AppHandle, save_path: String) -> Result
 
     log::info!("Exported diagnostic logs to {}", zip_path.display());
     Ok(crate::engine::path_to_safe_string(&zip_path))
+}
+
+/// Checks whether a file or directory exists at the given path.
+///
+/// This command bypasses Tauri's frontend FS scope restrictions, which
+/// fail to match Windows drive-root paths like `Z:\` due to glob pattern
+/// limitations (see <https://github.com/tauri-apps/tauri/issues/11119>).
+///
+/// For a download manager that must verify user-chosen download targets on
+/// any mounted volume, scope-free existence checks are essential.
+#[tauri::command]
+pub fn check_path_exists(path: String) -> bool {
+    std::path::Path::new(&path).exists()
+}
+
+/// Returns `true` when the given path exists **and** is a directory.
+///
+/// Counterpart to [`check_path_exists`] — used by the frontend to decide
+/// whether to call `openPath` (for a directory) or `revealItemInDir` (for
+/// a file). Same scope-bypass rationale applies.
+#[tauri::command]
+pub fn check_path_is_dir(path: String) -> bool {
+    std::path::Path::new(&path).is_dir()
 }
 
 /// Moves a file to the OS trash / recycle bin.

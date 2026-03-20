@@ -11,7 +11,6 @@ import { invoke } from '@tauri-apps/api/core'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { downloadDir, appDataDir } from '@tauri-apps/api/path'
 import { save as saveDialog } from '@tauri-apps/plugin-dialog'
-import { exists } from '@tauri-apps/plugin-fs'
 import { NTag, useDialog, type DataTableColumns } from 'naive-ui'
 import { logger } from '@shared/logger'
 import { bytesToSize } from '@shared/utils/format'
@@ -285,7 +284,7 @@ export function useAdvancedActions(deps: AdvancedActionsDeps) {
   async function handleRevealPath(filePath: string) {
     if (!filePath) return
     try {
-      const fileExists = await exists(filePath)
+      const fileExists = await invoke<boolean>('check_path_exists', { path: filePath })
       if (!fileExists) {
         message.warning(t('task.file-not-exist'))
         return

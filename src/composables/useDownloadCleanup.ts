@@ -2,7 +2,7 @@
  *
  * Pure, testable functions — side effects (FS access) are injected via imports.
  */
-import { exists, remove, readDir } from '@tauri-apps/plugin-fs'
+import { remove, readDir } from '@tauri-apps/plugin-fs'
 import { join } from '@tauri-apps/api/path'
 import { invoke } from '@tauri-apps/api/core'
 import { logger } from '@shared/logger'
@@ -27,7 +27,7 @@ export async function findStaleRecords(records: StaleCheckItem[]): Promise<strin
 
     try {
       const filePath = await join(record.dir, record.name)
-      const fileExists = await exists(filePath)
+      const fileExists = await invoke<boolean>('check_path_exists', { path: filePath })
       if (!fileExists) {
         staleGids.push(record.gid)
       }
@@ -45,7 +45,7 @@ export async function trashTorrentFile(path: string): Promise<boolean> {
   if (!path) return false
 
   try {
-    const fileExists = await exists(path)
+    const fileExists = await invoke<boolean>('check_path_exists', { path })
     if (!fileExists) return false
 
     await invoke('trash_file', { path })

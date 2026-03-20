@@ -5,12 +5,16 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock Tauri FS
-const mockExists = vi.fn()
+// Mock Tauri FS — remove still uses plugin-fs directly
 const mockRemove = vi.fn()
 vi.mock('@tauri-apps/plugin-fs', () => ({
-  exists: (...args: unknown[]) => mockExists(...args),
   remove: (...args: unknown[]) => mockRemove(...args),
+}))
+
+// Mock Tauri invoke — check_path_exists now goes through invoke
+const mockInvoke = vi.fn()
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: (...args: unknown[]) => mockInvoke(...args),
 }))
 
 // Mock Tauri path — join uses OS-native separator, mock with /
@@ -54,7 +58,7 @@ describe('useBatchDelete', () => {
 
   describe('deleteLocalFiles', () => {
     it('deletes files that exist', async () => {
-      mockExists.mockResolvedValue(true)
+      mockInvoke.mockResolvedValue(true)
       mockRemove.mockResolvedValue(undefined)
 
       const { deleted, errors } = await deleteLocalFiles(['/downloads/a.zip', '/downloads/b.zip'])
@@ -65,7 +69,7 @@ describe('useBatchDelete', () => {
     })
 
     it('skips files that do not exist', async () => {
-      mockExists.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      mockInvoke.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
       mockRemove.mockResolvedValue(undefined)
 
       const { deleted, errors } = await deleteLocalFiles(['/downloads/a.zip', '/downloads/gone.zip'])
@@ -76,7 +80,7 @@ describe('useBatchDelete', () => {
     })
 
     it('counts errors but does not throw', async () => {
-      mockExists.mockResolvedValue(true)
+      mockInvoke.mockResolvedValue(true)
       mockRemove.mockRejectedValueOnce(new Error('perm denied')).mockResolvedValueOnce(undefined)
 
       const { deleted, errors } = await deleteLocalFiles(['/downloads/locked.zip', '/downloads/ok.zip'])

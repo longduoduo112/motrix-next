@@ -4,8 +4,9 @@
  * - buildFilePaths: construct full paths from dir + name
  * - deleteLocalFiles: attempt to remove files with error resilience
  */
-import { exists, remove } from '@tauri-apps/plugin-fs'
+import { remove } from '@tauri-apps/plugin-fs'
 import { join } from '@tauri-apps/api/path'
+import { invoke } from '@tauri-apps/api/core'
 import { logger } from '@shared/logger'
 
 /** Construct full file paths from directory + filename pairs (platform-safe). */
@@ -21,7 +22,7 @@ export async function deleteLocalFiles(paths: string[]): Promise<{ deleted: numb
 
   for (const path of paths) {
     try {
-      const fileExists = await exists(path)
+      const fileExists = await invoke<boolean>('check_path_exists', { path })
       if (!fileExists) continue
       await remove(path, { recursive: true })
       deleted++

@@ -1,14 +1,13 @@
 /** @fileoverview TDD tests for stale record detection and torrent cleanup utilities. */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mockExists = vi.fn()
+const mockCheckPathExists = vi.fn()
 const mockRemove = vi.fn()
 const mockReadDir = vi.fn()
 const mockReadFile = vi.fn()
-const mockInvoke = vi.fn()
+const mockTrashFile = vi.fn()
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
-  exists: (...args: unknown[]) => mockExists(...args),
   remove: (...args: unknown[]) => mockRemove(...args),
   readDir: (...args: unknown[]) => mockReadDir(...args),
   readFile: (...args: unknown[]) => mockReadFile(...args),
@@ -19,8 +18,13 @@ vi.mock('@tauri-apps/api/path', () => ({
   join: (...parts: string[]) => Promise.resolve(parts.join('/')),
 }))
 
+// Mock invoke — routes check_path_exists and trash_file to separate handlers
 vi.mock('@tauri-apps/api/core', () => ({
-  invoke: (...args: unknown[]) => mockInvoke(...args),
+  invoke: (cmd: string, args?: Record<string, unknown>) => {
+    if (cmd === 'check_path_exists') return mockCheckPathExists(args)
+    if (cmd === 'trash_file') return mockTrashFile(args)
+    return Promise.reject(new Error(`Unexpected invoke: ${cmd}`))
+  },
 }))
 
 const { findStaleRecords, trashTorrentFile, shouldDeleteTorrent, cleanupTorrentMetadataFiles } =
@@ -35,7 +39,7 @@ describe('useDownloadCleanup', () => {
 
   describe('findStaleRecords', () => {
     it('returns GIDs of records whose files do not exist', async () => {
-      mockExists.mockResolvedValueOnce(true).mockResolvedValueOnce(false).mockResolvedValueOnce(false)
+      mockCheckPathExists.mockResolvedValueOnce(true).mockResolvedValueOnce(false).mockResolvedValueOnce(false)
 
       const records = [
         { gid: 'g1', dir: '/dl', name: 'exists.zip' },
@@ -48,7 +52,7 @@ describe('useDownloadCleanup', () => {
     })
 
     it('returns empty array when all files exist', async () => {
-      mockExists.mockResolvedValue(true)
+      mockCheckPathExists.mockResolvedValue(true)
 
       const records = [
         { gid: 'g1', dir: '/dl', name: 'a.zip' },
@@ -65,7 +69,7 @@ describe('useDownloadCleanup', () => {
     })
 
     it('skips records with missing dir or name', async () => {
-      mockExists.mockResolvedValue(true)
+      mockCheckPathExists.mockResolvedValue(true)
 
       const records = [
         { gid: 'g1', dir: '', name: 'a.zip' },
@@ -85,25 +89,25 @@ describe('useDownloadCleanup', () => {
 
   describe('trashTorrentFile', () => {
     it('trashes a torrent file that exists', async () => {
-      mockExists.mockResolvedValue(true)
-      mockInvoke.mockResolvedValue(undefined)
+      mockCheckPathExists.mockResolvedValue(true)
+      mockTrashFile.mockResolvedValue(undefined)
 
       const result = await trashTorrentFile('/downloads/movie.torrent')
       expect(result).toBe(true)
-      expect(mockInvoke).toHaveBeenCalledWith('trash_file', { path: '/downloads/movie.torrent' })
+      expect(mockTrashFile).toHaveBeenCalledWith({ path: '/downloads/movie.torrent' })
     })
 
     it('returns false when file does not exist', async () => {
-      mockExists.mockResolvedValue(false)
+      mockCheckPathExists.mockResolvedValue(false)
 
       const result = await trashTorrentFile('/downloads/gone.torrent')
       expect(result).toBe(false)
-      expect(mockInvoke).not.toHaveBeenCalled()
+      expect(mockTrashFile).not.toHaveBeenCalled()
     })
 
     it('returns false on error and does not throw', async () => {
-      mockExists.mockResolvedValue(true)
-      mockInvoke.mockRejectedValue(new Error('perm denied'))
+      mockCheckPathExists.mockResolvedValue(true)
+      mockTrashFile.mockRejectedValue(new Error('perm denied'))
 
       const result = await trashTorrentFile('/downloads/locked.torrent')
       expect(result).toBe(false)

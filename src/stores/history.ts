@@ -8,7 +8,8 @@
  */
 import { defineStore } from 'pinia'
 import Database from '@tauri-apps/plugin-sql'
-import { remove, exists } from '@tauri-apps/plugin-fs'
+import { remove } from '@tauri-apps/plugin-fs'
+import { invoke } from '@tauri-apps/api/core'
 import { appDataDir } from '@tauri-apps/api/path'
 import type { HistoryRecord } from '@shared/types'
 import { logger } from '@shared/logger'
@@ -43,7 +44,7 @@ export const useHistoryStore = defineStore('history', () => {
       const suffixes = ['history.db', 'history.db-wal', 'history.db-shm']
       for (const suffix of suffixes) {
         const path = `${dataDir}/${suffix}`
-        if (await exists(path)) {
+        if (await invoke<boolean>('check_path_exists', { path })) {
           await remove(path)
         }
       }
