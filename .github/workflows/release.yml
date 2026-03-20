@@ -206,8 +206,8 @@ jobs:
             WEBSITE_JSON="website-stable.json"
           fi
 
-          # Fetch release assets (authenticated — 1 000 req/hr/repo, no public rate limit concern)
-          RELEASE_URL=$(gh release view "$TAG" -R "$REPO" --json url -q .url)
+          # Construct the HTML release page URL directly from the tag
+          RELEASE_URL="https://github.com/${REPO}/releases/tag/${TAG}"
 
           # Build website JSON: version + html_url + installer-only assets
           gh api "repos/$REPO/releases/tags/$TAG" --jq '.assets[] | {name: .name, url: .browser_download_url}' \
