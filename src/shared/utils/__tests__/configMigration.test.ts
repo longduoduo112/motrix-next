@@ -4,7 +4,7 @@
  * Tests are written BEFORE the implementation to drive the design.
  * Each test defines an expected behavior that the migration engine must satisfy.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { runMigrations, CONFIG_VERSION } from '@shared/utils/configMigration'
 import { PROXY_SCOPE_OPTIONS } from '@shared/constants'
 import type { AppConfig } from '@shared/types'
@@ -153,5 +153,74 @@ describe('runMigrations preserves unrelated config fields', () => {
     expect(config.locale).toBe('zh-CN')
     expect(config.split).toBe(16)
     expect(config.dir).toBe('/downloads')
+  })
+})
+
+// ── CONFIG_VERSION consistency guard ───────────────────────────────
+
+describe('CONFIG_VERSION consistency guard', () => {
+  it('CONFIG_VERSION equals the number of registered migrations', async () => {
+    // The module-level guard throws at import time if mismatched.
+    // If we reach this test, the guard has already passed — verify
+    // the invariant explicitly by re-importing the constant.
+    const mod = await import('@shared/utils/configMigration')
+    expect(mod.CONFIG_VERSION).toBeGreaterThan(0)
+    // CONFIG_VERSION is set to migrations.length in source, and the
+    // runtime guard ensures they match. If this test passes, the
+    // invariant holds.
+  })
+})
+
+// ── Error isolation ────────────────────────────────────────────────
+
+describe('runMigrations error isolation', () => {
+  it('stamps configVersion even when a migration throws', () => {
+    // We can't easily inject a failing migration into the sealed array,
+    // but we can verify the contract: if proxy.scope triggers an error
+    // due to a corrupted proxy object, the engine should still stamp
+    // configVersion and return true.
+    const config: Partial<AppConfig> = {
+      // proxy.scope is a non-array value — Object.defineProperty to
+      // make .length throw when accessed
+      proxy: {
+        enable: true,
+        server: 'http://proxy:8080',
+        bypass: '',
+        get scope(): string[] {
+          throw new Error('simulated corruption')
+        },
+        set scope(_v: string[]) {
+          // no-op for the test
+        },
+      },
+    }
+    // Suppress expected error log during test
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const result = runMigrations(config)
+    logSpy.mockRestore()
+
+    // Migration failed but engine should still complete
+    expect(result).toBe(true)
+    expect(config.configVersion).toBe(CONFIG_VERSION)
+  })
+
+  it('does not crash the entire migration pipeline on error', () => {
+    // Verify runMigrations never throws, even with bad data
+    const config: Partial<AppConfig> = {
+      proxy: {
+        enable: true,
+        server: 'http://proxy:8080',
+        bypass: '',
+        get scope(): string[] {
+          throw new TypeError('cannot read property')
+        },
+        set scope(_v: string[]) {
+          // no-op
+        },
+      },
+    }
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => runMigrations(config)).not.toThrow()
+    logSpy.mockRestore()
   })
 })

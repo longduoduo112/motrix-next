@@ -54,8 +54,24 @@ const migrations: Migration[] = [
   },
 ]
 
+// ── Consistency guard ───────────────────────────────────────────────
+// Fail fast at import time if a developer adds a migration but forgets
+// to bump CONFIG_VERSION (or vice versa). This is caught by both
+// vitest and vite dev/build — never reaches production silently.
+if (CONFIG_VERSION !== migrations.length) {
+  throw new Error(
+    `CONFIG_VERSION (${CONFIG_VERSION}) must equal migrations.length (${migrations.length}). ` +
+      'Did you forget to bump CONFIG_VERSION after adding a migration?',
+  )
+}
+
 /**
  * Executes all pending migrations on the given config object.
+ *
+ * Each migration is wrapped in a try-catch so that a failure in one
+ * migration does not prevent subsequent migrations from executing.
+ * The config is always stamped to CONFIG_VERSION after the loop,
+ * ensuring partially-migrated configs are not re-processed.
  *
  * @param config - Mutable reference to the loaded user preferences.
  * @returns `true` if any migration was applied (caller must persist),
@@ -67,7 +83,14 @@ export function runMigrations(config: Partial<AppConfig>): boolean {
   if (stored >= CONFIG_VERSION) return false
 
   for (let i = stored; i < migrations.length; i++) {
-    migrations[i](config)
+    try {
+      migrations[i](config)
+    } catch (e) {
+      // Log and continue — don't let one broken migration block the rest.
+      // The config will still be stamped to CONFIG_VERSION to prevent
+      // re-running the failed migration on every subsequent launch.
+      logger.error('ConfigMigration', `v${i + 1} migration failed: ${(e as Error).message}`)
+    }
   }
 
   config.configVersion = CONFIG_VERSION
