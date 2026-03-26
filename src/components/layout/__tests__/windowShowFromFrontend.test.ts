@@ -147,10 +147,16 @@ describe('MainLayout.vue — show window from frontend on mount', () => {
     expect(mountedBody).toContain('is_autostart_launch')
   })
 
-  it('checks autoHideWindow preference before showing', () => {
+  it('reads autoHideWindow directly from Tauri Store IPC, not Pinia', () => {
+    // The Pinia store may not have finished hydrating when onMounted fires
+    // (loadPreference uses non-blocking .then()).  autoHideWindow must be
+    // read via Tauri Store IPC to match what the Rust guard sees.
     const mountedBody = extractOnMountedBody(source)
     expect(mountedBody).toBeTruthy()
     expect(mountedBody).toContain('autoHideWindow')
+    // Must load from Tauri store directly, not from preferenceStore
+    expect(mountedBody).toContain("load('config.json')")
+    expect(mountedBody).toContain("get<Record<string, unknown>>('preferences')")
   })
 
   it('show + focus happens BEFORE appReady transition', () => {
