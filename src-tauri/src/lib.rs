@@ -149,15 +149,22 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
         if keep_state {
             if let Some(w) = app.get_webview_window("main") {
-                // Exclude MAXIMIZED on macOS — same tao bug as above.
+                // Exclude VISIBLE — window visibility is managed entirely by
+                // the autostart-silent-mode logic below and the frontend's
+                // MainLayout.vue.  Allowing the window-state plugin to restore
+                // VISIBLE would race with the autostart check and show the
+                // window before the frontend can decide to hide it (#109).
+                //
+                // Exclude MAXIMIZED on macOS — known tao bug where
+                // isMaximized() triggers infinite resize loop (#5812).
                 let flags = {
                     #[cfg(target_os = "macos")]
                     {
-                        StateFlags::all() & !StateFlags::MAXIMIZED
+                        StateFlags::all() & !StateFlags::MAXIMIZED & !StateFlags::VISIBLE
                     }
                     #[cfg(not(target_os = "macos"))]
                     {
-                        StateFlags::all()
+                        StateFlags::all() & !StateFlags::VISIBLE
                     }
                 };
                 let _ = w.restore_state(flags);
@@ -165,13 +172,20 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Window visibility is deferred to the Vue frontend.
+    // Window visibility follows a two-layer defense-in-depth pattern:
+    //
+    //   1. PRIMARY (Rust): The autostart silent-mode guard below detects
+    //      --autostart + autoHideWindow and force-hides the window before
+    //      the frontend mounts.  Window-state plugin is permanently
+    //      configured to exclude StateFlags::VISIBLE (#109).
+    //
+    //   2. SECONDARY (Frontend): MainLayout.vue onMounted calls
+    //      show() + setFocus() ONLY when NOT in autostart-silent mode.
+    //      If the window is somehow visible despite the Rust guard, the
+    //      frontend force-hides it as a safety net.
+    //
     // The window starts hidden (tauri.conf.json visible: false) and
-    // only becomes visible when MainLayout.vue mounts and calls
-    // show() + setFocus().  This prevents the transparent-frame
-    // flash on Windows where DWM renders a shadow before WebView2
-    // finishes initializing.  The frontend checks autoHideWindow +
-    // is_autostart_launch to decide whether to show.
+    // transitions through this pipeline before becoming visible.
 
     // Disable Windows 11 DWM rounded corners on the main window.
     // With `transparent: true` + `decorations: false`, Windows 11
@@ -235,15 +249,27 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Log autostart detection for all platforms.
+    // Autostart silent-mode guard: detect + log + force-hide.
     //
-    // The frontend (MainLayout.vue) uses this same check to decide whether
-    // to skip window.show().  Logging the values here at INFO level ensures
-    // that user-submitted logs always contain the data needed to diagnose
-    // autostart-related bugs (e.g. --autostart flag missing from the
-    // Windows registry entry — auto-launch crate #771).
+    // When the app is launched by OS autostart (--autostart flag) AND the
+    // user has opted into "minimize to tray on autostart" (autoHideWindow),
+    // we force-hide the window HERE in Rust setup(), BEFORE the frontend
+    // mounts.  This is the primary defense — it runs synchronously in the
+    // setup() callback, guaranteeing the window never becomes visible.
+    //
+    // The frontend (MainLayout.vue) has its own defense-in-depth check:
+    // if shouldHide is true, it calls hide() again as a safety net.
+    //
+    // This two-layer approach mirrors the Electron industry standard where
+    // the main process checks process.argv for --hidden before calling
+    // BrowserWindow.show().
+    //
+    // Logging at INFO level ensures user-submitted logs always contain the
+    // data needed to diagnose autostart bugs (e.g. --autostart flag missing
+    // from the Windows registry entry — auto-launch crate #771).
     {
-        let is_autostart = std::env::args().any(|a| a == "--autostart");
+        let is_autostart =
+            std::env::args().any(|a| a == "--autostart" || a.starts_with("--autostart="));
         let auto_hide = app
             .store("config.json")
             .ok()
@@ -251,16 +277,26 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             .and_then(|p| p.get("autoHideWindow")?.as_bool())
             .unwrap_or(false);
 
+        let should_hide = is_autostart && auto_hide;
+
         log::info!(
-            "setup: is_autostart={} auto_hide_window={} (window will {})",
+            "setup: is_autostart={} auto_hide_window={} → should_hide={} (window will {})",
             is_autostart,
             auto_hide,
-            if is_autostart && auto_hide {
+            should_hide,
+            if should_hide {
                 "stay hidden"
             } else {
-                "be shown by frontend"
+                "be shown by frontend when ready"
             }
         );
+
+        if should_hide {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.hide();
+                log::info!("setup: window force-hidden for autostart silent mode");
+            }
+        }
     }
 
     Ok(())
@@ -487,8 +523,14 @@ pub fn run() {
     builder = builder.plugin(tauri_plugin_deep_link::init());
     // Window-state plugin: saves/restores window position and size.
     //
-    // macOS: Exclude StateFlags::MAXIMIZED to avoid a known bug in tao
-    // where isMaximized() triggers a new resize event, creating an
+    // VISIBLE is permanently excluded from the plugin's state flags.
+    // Window visibility is managed entirely by the autostart-silent-mode
+    // guard in setup_app() and the frontend's MainLayout.vue.  Allowing
+    // the plugin to save/restore VISIBLE would cause the window to flash
+    // on autostart before the silent-mode check can hide it (#109).
+    //
+    // macOS: Also exclude StateFlags::MAXIMIZED to avoid a known bug in
+    // tao where isMaximized() triggers a new resize event, creating an
     // infinite loop (tauri-apps/tauri#5812).  The frontend also skips
     // isMaximized() tracking on macOS (see MainLayout.vue).
     builder = builder.plugin({
@@ -497,11 +539,11 @@ pub fn run() {
         let flags = {
             #[cfg(target_os = "macos")]
             {
-                StateFlags::all() & !StateFlags::MAXIMIZED
+                StateFlags::all() & !StateFlags::MAXIMIZED & !StateFlags::VISIBLE
             }
             #[cfg(not(target_os = "macos"))]
             {
-                StateFlags::all()
+                StateFlags::all() & !StateFlags::VISIBLE
             }
         };
 

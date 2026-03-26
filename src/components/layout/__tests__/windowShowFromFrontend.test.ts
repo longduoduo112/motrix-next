@@ -164,6 +164,27 @@ describe('MainLayout.vue — show window from frontend on mount', () => {
     expect(readyIdx).toBeGreaterThanOrEqual(0)
     expect(showIdx).toBeLessThan(readyIdx)
   })
+
+  it('has defense-in-depth hide() when shouldHide is true', () => {
+    // When shouldHide is true, the frontend must force-hide the window
+    // as a safety net in case the Rust-layer guard missed.
+    const mountedBody = extractOnMountedBody(source)
+    expect(mountedBody).toBeTruthy()
+    expect(mountedBody).toContain('.hide()')
+    expect(mountedBody).toContain('.isVisible()')
+  })
+
+  it('logs a warning when force-hiding an unexpectedly visible window', () => {
+    const mountedBody = extractOnMountedBody(source)
+    expect(mountedBody).toBeTruthy()
+    expect(mountedBody).toContain('unexpectedly visible')
+  })
+
+  it('documents two-layer defense-in-depth architecture', () => {
+    expect(source).toContain('defense-in-depth')
+    expect(source).toContain('PRIMARY')
+    expect(source).toContain('SECONDARY')
+  })
 })
 
 // ─── Helpers ────────────────────────────────────────────────────────

@@ -215,6 +215,14 @@ onMounted(async () => {
   // Skip show when the app was launched by OS autostart AND the user has
   // opted into "minimize to tray on autostart" — the window stays hidden.
   //
+  // Architecture (two-layer defense-in-depth):
+  //   1. PRIMARY: Rust setup_app() force-hides the window synchronously
+  //      before the frontend mounts (see lib.rs autostart silent-mode guard).
+  //   2. SECONDARY: This frontend check acts as a safety net.  If the
+  //      --autostart flag was lost (auto-launch crate #771) or if a
+  //      window-state plugin update re-introduces VISIBLE restoration,
+  //      this code detects and corrects the state.
+  //
   // NOTE: The Rust backend logs the same detection at INFO level in
   // setup_app().  Both logs together provide a full diagnostic trace for
   // autostart bugs (e.g. --autostart flag missing on Windows cold boot).
@@ -231,6 +239,20 @@ onMounted(async () => {
       const appWindow = getCurrentWindow()
       await appWindow.show()
       await appWindow.setFocus()
+    } else {
+      // Defense-in-depth: if the window is somehow visible despite the
+      // Rust-layer guard (e.g. --autostart flag lost, window-state race),
+      // force-hide it now.  Log a warning so the root cause can be
+      // investigated from user-submitted logs.
+      const appWindow = getCurrentWindow()
+      const visible = await appWindow.isVisible()
+      if (visible) {
+        logger.warn(
+          'MainLayout.windowVisibility',
+          'window unexpectedly visible during autostart silent mode — forcing hide',
+        )
+        await appWindow.hide()
+      }
     }
   }
 

@@ -6,13 +6,19 @@ use tauri::Manager;
 /// Returns `true` when the current process was launched by the OS
 /// autostart mechanism (the Tauri autostart plugin appends `--autostart`).
 ///
+/// Checks for both exact `--autostart` and prefix `--autostart=` variants
+/// to tolerate edge cases from the auto-launch crate's Windows registry
+/// entry handling (nicehash/auto-launch#771).
+///
 /// Emits an INFO log with the full argument list on every call so that
 /// autostart-related bugs can be diagnosed from user-submitted logs
 /// without requiring manual registry inspection.
 #[tauri::command]
 pub fn is_autostart_launch() -> bool {
     let args: Vec<String> = std::env::args().collect();
-    let result = args.iter().any(|a| a == "--autostart");
+    let result = args
+        .iter()
+        .any(|a| a == "--autostart" || a.starts_with("--autostart="));
     log::info!("is_autostart_launch: args={:?} result={}", args, result);
     result
 }
