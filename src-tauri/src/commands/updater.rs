@@ -66,19 +66,34 @@ impl UpdateCancelState {
     }
 }
 
-/// Holds the downloaded update bytes between `download_update` and `apply_update`.
+/// A downloaded update package pinned to the version it was downloaded for.
+///
+/// `downloaded_version` is captured from `Update::version` at download time so
+/// that `apply_update` can detect if the remote channel drifted between download
+/// and install.  Without this, a version-B `Update` object could be paired with
+/// version-A bytes, causing install() to fail and discard the cached package.
+pub struct DownloadedPackage {
+    pub downloaded_version: String,
+    pub bytes: Vec<u8>,
+}
+
+/// Holds the downloaded update package between `download_update` and `apply_update`.
 ///
 /// `download_update` stores the verified package here; `apply_update` takes it
 /// out, stops the engine, and installs.  This decouples downloading (aria2 stays
 /// alive) from installation (aria2 must be stopped).
+///
+/// **Important**: `install(bytes)` consumes `Vec<u8>` by value.  If installation
+/// fails, the bytes are unrecoverable without a full re-download — this is a
+/// Tauri API limitation, not a design oversight.
 pub struct DownloadedUpdate {
-    bytes: Mutex<Option<Vec<u8>>>,
+    package: Mutex<Option<DownloadedPackage>>,
 }
 
 impl DownloadedUpdate {
     pub fn new() -> Self {
         Self {
-            bytes: Mutex::new(None),
+            package: Mutex::new(None),
         }
     }
 }
@@ -239,11 +254,15 @@ pub async fn download_update(
         }
     };
 
-    // Store downloaded bytes for later installation
+    // Store downloaded package (version + bytes) for later installation.
+    // The version is pinned here so apply_update can detect channel drift.
     let dl_state = app.state::<Arc<DownloadedUpdate>>();
     let byte_count = bytes.len();
-    *dl_state.bytes.lock().await = Some(bytes);
-    log::info!("updater:download complete bytes={byte_count}");
+    *dl_state.package.lock().await = Some(DownloadedPackage {
+        downloaded_version: update.version.clone(),
+        bytes,
+    });
+    log::info!("updater:download complete version={} bytes={byte_count}", update.version);
 
     // Emit download-finished (NOT Finished — that signals post-install)
     if !cancel_state.is_cancelled() {
@@ -279,14 +298,30 @@ pub async fn apply_update(
         .map_err(|e| AppError::Updater(e.to_string()))?
         .ok_or_else(|| AppError::Updater("Update no longer available".into()))?;
 
-    // Take the downloaded bytes from shared state AFTER check() succeeds.
+    // Take the cached package AFTER check() succeeds.
     let dl_state = app.state::<Arc<DownloadedUpdate>>();
-    let bytes = dl_state
-        .bytes
-        .lock()
-        .await
+    let mut pkg_guard = dl_state.package.lock().await;
+    let cached = pkg_guard
         .take()
         .ok_or_else(|| AppError::Updater("No downloaded update available".into()))?;
+
+    // Version-drift guard: if the remote channel moved to a different version
+    // since download, reject and preserve the cached package for retry.
+    if update.version != cached.downloaded_version {
+        log::warn!(
+            "updater:apply version drift: downloaded={} remote={}",
+            cached.downloaded_version,
+            update.version
+        );
+        let cached_ver = cached.downloaded_version.clone();
+        *pkg_guard = Some(cached);
+        return Err(AppError::Updater(format!(
+            "Downloaded v{cached_ver} but channel now points to v{}; please re-download",
+            update.version
+        )));
+    }
+    let bytes = cached.bytes;
+    drop(pkg_guard); // release lock before engine stop
 
     // ── Phase 1: Stop aria2c engine BEFORE installation ─────────────
     // On Windows, NSIS cannot overwrite a running .exe binary.

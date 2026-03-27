@@ -49,3 +49,40 @@ describe('updater.rs — apply_update sequence', () => {
     expect(matches).toHaveLength(1)
   })
 })
+
+describe('updater.rs — version-pinned package cache', () => {
+  let updaterSource: string
+  const updaterPath = path.join(TAURI_ROOT, 'src', 'commands', 'updater.rs')
+
+  beforeAll(() => {
+    updaterSource = fs.readFileSync(updaterPath, 'utf-8')
+  })
+
+  it('defines DownloadedPackage struct with downloaded_version field', () => {
+    expect(updaterSource).toContain('struct DownloadedPackage')
+    expect(updaterSource).toMatch(/downloaded_version:\s*String/)
+  })
+
+  it('download_update stores version alongside bytes in DownloadedPackage', () => {
+    const body = extractRustFnBody(updaterSource, 'pub async fn download_update')
+    expect(body).toBeTruthy()
+    expect(body).toContain('DownloadedPackage')
+    expect(body).toContain('downloaded_version')
+  })
+
+  it('apply_update compares cached version against remote version before install', () => {
+    const body = extractRustFnBody(updaterSource, 'pub async fn apply_update')
+    expect(body).toBeTruthy()
+    // Must reference both the cached version and the update version in a comparison
+    expect(body).toContain('downloaded_version')
+    expect(body).toContain('update.version')
+  })
+
+  it('apply_update preserves cache on version mismatch (puts package back)', () => {
+    const body = extractRustFnBody(updaterSource, 'pub async fn apply_update')
+    expect(body).toBeTruthy()
+    // The version-mismatch branch must reassign Some(...) back to the guard
+    // to preserve the downloaded bytes for retry
+    expect(body).toMatch(/Some\(cached\)/)
+  })
+})
