@@ -252,6 +252,6 @@ mod tests {
     fn tray_icon_image_does_not_panic() {
         let img = tray_icon_image();
         // Image must have non-zero dimensions.
-        assert!(img.rgba().len() > 0, "decoded tray icon has no pixel data");
+        assert!(!img.rgba().is_empty(), "decoded tray icon has no pixel data");
     }
 }
