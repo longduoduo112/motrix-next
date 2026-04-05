@@ -8,6 +8,13 @@ mod menu;
 mod tray;
 mod upnp;
 
+// Re-export the Windows elevation entry point at the crate root so that
+// main.rs can call it before Tauri initialises.  The `commands` module
+// is intentionally private — only this single function needs to be
+// accessible from the binary crate.
+#[cfg(windows)]
+pub use commands::protocol::try_run_elevated;
+
 use crate::commands::updater::{DownloadedUpdate, UpdateCancelState};
 use engine::EngineState;
 use tauri::{Emitter, Manager};

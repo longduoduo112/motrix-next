@@ -6,7 +6,7 @@ fn main() {
     // This path runs BEFORE Tauri initialises, so no window is created.
     // See protocol.rs `mod elevation` for details on the Chrome-style pattern.
     #[cfg(windows)]
-    if let Some(code) = motrix_next_lib::commands::protocol::try_run_elevated() {
+    if let Some(code) = motrix_next_lib::try_run_elevated() {
         std::process::exit(code);
     }
 
