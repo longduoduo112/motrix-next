@@ -1,6 +1,67 @@
 ; NSIS installer hooks for Motrix Next.
-; These macros are invoked by Tauri's NSIS template during both
-; fresh installs AND silent OTA (updater) installs.
+; These macros and callbacks are invoked by Tauri's NSIS template
+; during both fresh installs AND silent OTA (updater) installs.
+
+
+; ────────────────────────────────────────────────────────────────
+; .onGUIInit — MANUPRODUCTKEY registry bridge
+; ────────────────────────────────────────────────────────────────
+;
+; Changing bundle.publisher from unset to "AnInsomniacy" shifted
+; the MANUFACTURER variable (motrix → AnInsomniacy), which moved
+; the MANUPRODUCTKEY registry path:
+;
+;   OLD: HKCU\Software\motrix\MotrixNext        (≤ 3.6.1)
+;   NEW: HKCU\Software\AnInsomniacy\MotrixNext   (≥ 3.6.2)
+;
+; The template's PageLeaveReinstall reads MANUPRODUCTKEY to build
+; the `_?=` parameter when launching the old uninstaller.  An
+; empty `_?=` causes the uninstaller to fail its integrity check
+; → "NSIS Error: Error launching installer" (issue #159).
+;
+; Fix: copy the install-directory value from the old key to the
+; new key BEFORE any pages are displayed.  .onGUIInit is the
+; earliest available hook point that the template does not define.
+;
+; Execution order:
+;   .onInit  (template)  → RestorePreviousInstallLocation (reads
+;                           new MANUPRODUCTKEY — empty, no-op)
+;   .onGUIInit (this)    → bridges old → new MANUPRODUCTKEY
+;   Welcome page
+;   MULTIUSER page       → RestorePreviousInstallLocation called
+;                           again (now succeeds via bridged data)
+;   Reinstall page       → PageLeaveReinstall reads MANUPRODUCTKEY
+;                           (now succeeds — _?= has correct path)
+;   Section Install      → PREINSTALL hook (handles the rest)
+;
+; Silent mode: .onGUIInit is NOT called, but silent mode skips all
+; pages — PageLeaveReinstall never fires, and the PREINSTALL hook
+; handles directory redirection independently.
+;
+; This function is safe for fresh installs (old key absent → no-op)
+; and for already-migrated users (old key already cleaned up by
+; PREINSTALL → no-op).
+
+Function .onGUIInit
+  ; Try HKCU first (old currentUser installs write here)
+  ReadRegStr $R0 HKCU "Software\motrix\MotrixNext" ""
+  StrCmp $R0 "" _motrix_bridge_hklm 0
+    WriteRegStr HKCU "Software\AnInsomniacy\MotrixNext" "" $R0
+    Goto _motrix_bridge_done
+
+  _motrix_bridge_hklm:
+  ; Try HKLM (unlikely but defensive: per-machine with old publisher)
+  ReadRegStr $R0 HKLM "Software\motrix\MotrixNext" ""
+  StrCmp $R0 "" _motrix_bridge_done 0
+    WriteRegStr HKLM "Software\AnInsomniacy\MotrixNext" "" $R0
+
+  _motrix_bridge_done:
+FunctionEnd
+
+
+; ────────────────────────────────────────────────────────────────
+; NSIS_HOOK_PREINSTALL — in-place upgrade migration
+; ────────────────────────────────────────────────────────────────
 
 !macro NSIS_HOOK_PREINSTALL
   ; ── Migration: currentUser → both ──────────────────────────────
