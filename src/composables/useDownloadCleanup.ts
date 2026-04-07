@@ -2,9 +2,10 @@
  *
  * Pure, testable functions — side effects (FS access) are injected via imports.
  */
-import { remove, readDir } from '@tauri-apps/plugin-fs'
+import { readDir } from '@tauri-apps/plugin-fs'
 import { join } from '@tauri-apps/api/path'
 import { invoke } from '@tauri-apps/api/core'
+import { trashPath } from '@/composables/useFileDelete'
 import { logger } from '@shared/logger'
 
 /** Record shape needed for stale detection (not the full HistoryRecord). */
@@ -141,9 +142,9 @@ export async function cleanupTorrentMetadataFiles(
       try {
         const hash = await extractHash(filePath)
         if (hash === infoHash) {
-          await remove(filePath)
-          logger.debug('cleanupTorrentMetadata', `deleted ${entry.name}`)
-          return true
+          const trashed = await trashPath(filePath)
+          if (trashed) logger.debug('cleanupTorrentMetadata', `trashed ${entry.name}`)
+          return trashed
         }
       } catch (e) {
         logger.debug('cleanupTorrentMetadata', `skipping ${entry.name}: ${e}`)

@@ -2,9 +2,9 @@
  * @fileoverview Tests for the deleteTaskFiles function.
  *
  * Key behaviors under test:
- * - Deletes each file referenced by the task
- * - Deletes companion .aria2 control files for each task file
- * - Removes empty parent directories (but not the root download dir)
+ * - Trashes each file referenced by the task (via trash_file IPC)
+ * - Trashes companion .aria2 control files for each task file
+ * - Removes empty parent directories (permanent — not trashed)
  * - Removes the named task directory if empty after file deletion
  * - Silently handles missing files without throwing
  * - Handles tasks with no files gracefully
@@ -12,10 +12,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Aria2Task } from '@shared/types'
 
-// ── Mock Tauri FS and Path ──────────────────────────────────────────
+// ── Mock Tauri FS, Path, and Core ───────────────────────────────────
 const mockRemove = vi.fn()
 const mockReadDir = vi.fn()
 const mockJoin = vi.fn()
+const mockCheckPathExists = vi.fn()
+const mockTrashFile = vi.fn()
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
   remove: (...args: unknown[]) => mockRemove(...args),
@@ -24,6 +26,14 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 
 vi.mock('@tauri-apps/api/path', () => ({
   join: (...args: unknown[]) => mockJoin(...args),
+}))
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: (cmd: string, args?: Record<string, unknown>) => {
+    if (cmd === 'check_path_exists') return mockCheckPathExists(args)
+    if (cmd === 'trash_file') return mockTrashFile(args)
+    return Promise.reject(new Error(`Unexpected invoke: ${cmd}`))
+  },
 }))
 
 import { deleteTaskFiles } from '../useFileDelete'
@@ -47,6 +57,8 @@ function makeTask(overrides: Partial<Aria2Task> = {}): Aria2Task {
 describe('deleteTaskFiles', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCheckPathExists.mockResolvedValue(true)
+    mockTrashFile.mockResolvedValue(undefined)
     mockRemove.mockResolvedValue(undefined)
     mockReadDir.mockResolvedValue([]) // empty dir by default
     mockJoin.mockImplementation((...parts: string[]) => parts.join('/'))
@@ -62,10 +74,10 @@ describe('deleteTaskFiles', () => {
 
     await deleteTaskFiles(task)
 
-    expect(mockRemove).toHaveBeenCalledWith('/downloads/file1.zip', { recursive: true })
-    expect(mockRemove).toHaveBeenCalledWith('/downloads/file1.zip.aria2')
-    expect(mockRemove).toHaveBeenCalledWith('/downloads/file2.zip', { recursive: true })
-    expect(mockRemove).toHaveBeenCalledWith('/downloads/file2.zip.aria2')
+    expect(mockTrashFile).toHaveBeenCalledWith({ path: '/downloads/file1.zip' })
+    expect(mockTrashFile).toHaveBeenCalledWith({ path: '/downloads/file1.zip.aria2' })
+    expect(mockTrashFile).toHaveBeenCalledWith({ path: '/downloads/file2.zip' })
+    expect(mockTrashFile).toHaveBeenCalledWith({ path: '/downloads/file2.zip.aria2' })
   })
 
   it('removes empty parent directories that differ from root dir', async () => {
@@ -85,7 +97,7 @@ describe('deleteTaskFiles', () => {
 
     await deleteTaskFiles(task)
 
-    // Should attempt to remove /downloads/subdir
+    // Should attempt to remove /downloads/subdir (permanent, not trashed)
     expect(mockReadDir).toHaveBeenCalledWith('/downloads/subdir')
     expect(mockRemove).toHaveBeenCalledWith('/downloads/subdir')
   })
@@ -118,7 +130,7 @@ describe('deleteTaskFiles', () => {
         { index: '1', path: '/downloads/gone.zip', length: '100', completedLength: '100', selected: 'true', uris: [] },
       ],
     })
-    mockRemove.mockRejectedValue(new Error('file not found'))
+    mockCheckPathExists.mockResolvedValue(false)
 
     // Should not throw
     await expect(deleteTaskFiles(task)).resolves.toBeUndefined()
@@ -129,9 +141,9 @@ describe('deleteTaskFiles', () => {
 
     await deleteTaskFiles(task)
 
-    // No remove calls for files (only possibly the task dir)
+    // No trash calls for files (only possibly the task dir)
     // The task has no bittorrent info, so getTaskName returns '' and no task dir removal
-    expect(mockRemove).not.toHaveBeenCalled()
+    expect(mockTrashFile).not.toHaveBeenCalled()
   })
 
   it('removes the named task directory when it exists and is empty', async () => {
@@ -164,8 +176,7 @@ describe('deleteTaskFiles', () => {
 
     await deleteTaskFiles(task)
 
-    // Only task dir removals, no file removals since path is empty
-    const removedPaths = mockRemove.mock.calls.map((c: unknown[]) => c[0])
-    expect(removedPaths).not.toContain('')
+    // trashPath short-circuits on empty path — no invoke calls for files
+    expect(mockTrashFile).not.toHaveBeenCalled()
   })
 })
