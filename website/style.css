@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
    Motrix Next — Website Stylesheet
    Design direction: Refined Industrial
-   Typography: Sora (display) + Plus Jakarta Sans (body)
+   Typography: System UI (native platform fonts)
    Themes: Dark (default) + Light (warm white)
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -43,8 +43,8 @@
   --compare-strike: rgba(255, 255, 255, 0.15);
 
   /* Typography */
-  --font-display: 'Sora', system-ui, sans-serif;
-  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Monaco, 'Cascadia Code', Consolas, monospace;
 
   /* Motion */
