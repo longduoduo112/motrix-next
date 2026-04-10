@@ -17,6 +17,7 @@
 import type { VNodeChild } from 'vue'
 import type { Aria2Task } from '@shared/types'
 import { getTaskDisplayName } from '@shared/utils'
+import { logger } from '@shared/logger'
 import { isMetadataTask } from '@/composables/useTaskLifecycle'
 import { notifyOs } from '@/composables/useOsNotification'
 import { renderCompletionToast } from '@/composables/useNotificationToast'
@@ -55,6 +56,7 @@ export function handleTaskComplete(task: Aria2Task, deps: NotifyDeps): void {
   })
   deps.messageSuccess(toastContent)
   notifyOs('MotrixNext', body)
+  logger.info('TaskNotify.complete', `gid=${task.gid} name="${taskName}"`)
 }
 
 /**
@@ -78,6 +80,7 @@ export function handleBtComplete(task: Aria2Task, deps: NotifyDeps): void {
   })
   deps.messageSuccess(toastContent)
   notifyOs('MotrixNext', body)
+  logger.info('TaskNotify.btComplete', `gid=${task.gid} name="${taskName}" → seeding`)
 }
 
 /**
@@ -87,4 +90,5 @@ export function handleBtComplete(task: Aria2Task, deps: NotifyDeps): void {
 export function handleTaskError(_task: Aria2Task, errorText: string, deps: NotifyDeps): void {
   if (!deps.taskNotification) return
   notifyOs('MotrixNext', errorText)
+  logger.warn('TaskNotify.error', `gid=${_task.gid} error="${errorText}"`)
 }

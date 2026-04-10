@@ -13,6 +13,7 @@
  * - applyCustomLimit       — set specific values via RPC + persist
  */
 import type { AppConfig } from '@shared/types'
+import { logger } from '@shared/logger'
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -115,7 +116,10 @@ export async function toggleSpeedLimit(
 ): Promise<'enabled' | 'disabled' | 'needs-config'> {
   const action = resolveToggleAction(config)
 
-  if (action === 'needs-config') return 'needs-config'
+  if (action === 'needs-config') {
+    logger.info('SpeedLimiter.toggle', 'no configured limits — prompting user')
+    return 'needs-config'
+  }
 
   if (action === 'disable') {
     // Remove limits from aria2 engine
@@ -124,15 +128,19 @@ export async function toggleSpeedLimit(
       maxOverallUploadLimit: '0',
     })
     await deps.updateAndSave({ speedLimitEnabled: false })
+    logger.info('SpeedLimiter.toggle', 'disabled — sent 0/0 to aria2')
     return 'disabled'
   }
 
   // action === 'enable': apply configured values
+  const dl = config.maxOverallDownloadLimit
+  const ul = config.maxOverallUploadLimit
   await deps.changeGlobalOption({
-    maxOverallDownloadLimit: config.maxOverallDownloadLimit,
-    maxOverallUploadLimit: config.maxOverallUploadLimit,
+    maxOverallDownloadLimit: dl,
+    maxOverallUploadLimit: ul,
   })
   await deps.updateAndSave({ speedLimitEnabled: true })
+  logger.info('SpeedLimiter.toggle', `enabled — dl=${dl} ul=${ul}`)
   return 'enabled'
 }
 
@@ -160,6 +168,7 @@ export async function applyCustomLimit(
     maxOverallUploadLimit: uploadLimit,
     speedLimitEnabled: hasLimit,
   })
+  logger.info('SpeedLimiter.applyCustom', `dl=${downloadLimit} ul=${uploadLimit} enabled=${hasLimit}`)
 }
 
 /**
@@ -174,4 +183,5 @@ export async function removeSpeedLimit(deps: SpeedLimiterDeps): Promise<void> {
     maxOverallUploadLimit: '0',
   })
   await deps.updateAndSave({ speedLimitEnabled: false })
+  logger.info('SpeedLimiter.remove', 'cleared — sent 0/0 to aria2')
 }

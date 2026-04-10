@@ -104,6 +104,7 @@ export async function getGlobalStat(): Promise<Aria2RawGlobalStat> {
 /** Updates aria2 global configuration at runtime. */
 export async function changeGlobalOption(options: Partial<AppConfig>): Promise<void> {
   const engineOptions = formatOptionsForEngine(options)
+  logger.debug('aria2.changeGlobalOption', engineOptions)
   await getClient().call<string>('changeGlobalOption', engineOptions)
 }
 
@@ -199,7 +200,9 @@ export async function addUri(params: {
     if (outs[index]) opts.out = outs[index]
     return getClient().call<string>('addUri', [uri], opts)
   })
-  return Promise.all(tasks)
+  const gids = await Promise.all(tasks)
+  logger.info('aria2.addUri', `added ${gids.length} URI task(s) gids=[${gids.join(',')}]`)
+  return gids
 }
 
 /**
@@ -210,7 +213,9 @@ export async function addUri(params: {
 export async function addUriAtomic(params: { uris: string[]; options: Record<string, string> }): Promise<string> {
   const { uris, options } = params
   const engineOptions = formatOptionsForEngine(options)
-  return getClient().call<string>('addUri', uris, engineOptions)
+  const gid = await getClient().call<string>('addUri', uris, engineOptions)
+  logger.debug('aria2.addUriAtomic', `gid=${gid} mirrors=${uris.length}`)
+  return gid
 }
 
 /** Adds a torrent download from a base64-encoded .torrent file. */
@@ -219,7 +224,9 @@ export async function addTorrent(params: { torrent: string; options: Aria2Engine
   // BT downloads need force-save=true for session persistence (seeding resumption).
   // HTTP downloads must NOT have this — see SessionSerializer.cc:288.
   engineOptions['force-save'] = 'true'
-  return getClient().call<string>('addTorrent', params.torrent, [], engineOptions)
+  const gid = await getClient().call<string>('addTorrent', params.torrent, [], engineOptions)
+  logger.info('aria2.addTorrent', `gid=${gid}`)
+  return gid
 }
 
 /** Adds a metalink download from a base64-encoded .metalink file. */
@@ -227,7 +234,9 @@ export async function addMetalink(params: { metalink: string; options: Aria2Engi
   const engineOptions = formatOptionsForEngine(params.options)
   // Metalink downloads may contain BT sources — persist for seeding resumption.
   engineOptions['force-save'] = 'true'
-  return getClient().call<string[]>('addMetalink', params.metalink, engineOptions)
+  const gids = await getClient().call<string[]>('addMetalink', params.metalink, engineOptions)
+  logger.info('aria2.addMetalink', `added ${gids.length} task(s) gids=[${gids.join(',')}]`)
+  return gids
 }
 
 /** Forcefully removes a download task by GID. */

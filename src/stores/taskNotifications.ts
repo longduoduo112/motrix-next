@@ -12,6 +12,7 @@
  */
 import { TASK_STATUS } from '@shared/constants'
 import { checkTaskIsSeeder } from '@shared/utils'
+import { logger } from '@shared/logger'
 import type { Aria2Task } from '@shared/types'
 
 interface ScanCallbacks {
@@ -86,6 +87,9 @@ export function createTaskNotifier(): TaskNotifier {
     }
 
     // Mark initial scan as done AFTER all callbacks — unconditionally.
+    if (!initialScanDone) {
+      logger.debug('TaskNotifier.initialScan', `suppressed notifications for ${tasks.length} pre-existing task(s)`)
+    }
     initialScanDone = true
   }
 

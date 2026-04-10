@@ -40,6 +40,7 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
       } catch {
         /* best-effort: task may already be gone */
       }
+      logger.info('TaskOps.removeTask', `gid=${task.gid}`)
     } finally {
       await fetchList()
       await api.saveSession()
@@ -51,6 +52,7 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
     const promise = isBT ? api.forcePauseTask({ gid: task.gid }) : api.pauseTask({ gid: task.gid })
     try {
       await promise
+      logger.info('TaskOps.pauseTask', `gid=${task.gid} bt=${isBT}`)
     } finally {
       await fetchList()
       await api.saveSession()
@@ -60,6 +62,7 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
   async function resumeTask(task: Aria2Task) {
     try {
       await api.resumeTask({ gid: task.gid })
+      logger.info('TaskOps.resumeTask', `gid=${task.gid}`)
     } finally {
       await fetchList()
       await api.saveSession()
@@ -74,6 +77,10 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
       if (nonSeeders.length > 0) {
         await Promise.allSettled(nonSeeders.map((t) => api.forcePauseTask({ gid: t.gid })))
       }
+      logger.info(
+        'TaskOps.pauseAllTask',
+        `paused=${nonSeeders.length} gids=[${nonSeeders.map((t) => t.gid).join(',')}]`,
+      )
     } finally {
       await fetchList()
       await api.saveSession()
@@ -83,6 +90,7 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
   async function resumeAllTask() {
     try {
       await api.resumeAllTask()
+      logger.info('TaskOps.resumeAllTask', 'resumed all paused tasks')
     } finally {
       await fetchList()
       await api.saveSession()
@@ -93,6 +101,7 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
     const { status } = task
     if (status === TASK_STATUS.ACTIVE && !checkTaskIsSeeder(task)) return pauseTask(task)
     if (status === TASK_STATUS.WAITING || status === TASK_STATUS.PAUSED) return resumeTask(task)
+    logger.debug('TaskOps.toggleTask', `no-op gid=${task.gid} status=${status} seeder=${checkTaskIsSeeder(task)}`)
   }
 
   async function stopSeeding(task: Aria2Task) {
@@ -144,6 +153,7 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
           /* silent — metadata cleanup is best-effort */
         }
       }
+      logger.info('TaskOps.stopSeeding', `gid=${gid} infoHash=${task.infoHash ?? 'n/a'}`)
     } finally {
       await fetchList()
       await api.saveSession()
@@ -154,6 +164,7 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
     const seeders = taskList.value.filter(checkTaskIsSeeder)
     if (seeders.length === 0) return 0
     await Promise.allSettled(seeders.map((t) => stopSeeding(t)))
+    logger.info('TaskOps.stopAllSeeding', `stopped ${seeders.length} seeder(s)`)
     return seeders.length
   }
 
@@ -197,6 +208,7 @@ export function createTaskOperations(deps: TaskOperationsDeps) {
           /* best-effort: task may already be gone */
         }
       }
+      logger.info('TaskOps.batchRemoveTask', `removed ${gids.length} task(s) gids=[${gids.join(',')}]`)
     } finally {
       await fetchList()
       await api.saveSession()
