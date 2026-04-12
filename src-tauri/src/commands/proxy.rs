@@ -50,15 +50,21 @@ pub fn get_system_proxy() -> Result<Option<SystemProxyInfo>, AppError> {
 
 #[cfg(target_os = "windows")]
 fn get_system_proxy_impl() -> Result<Option<SystemProxyInfo>, AppError> {
-    let subkey = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings";
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
 
-    let enabled = read_reg_dword(subkey, "ProxyEnable").unwrap_or(0);
-    log::debug!("proxy:windows enabled={}", enabled);
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let settings = hkcu
+        .open_subkey(r"Software\Microsoft\Windows\CurrentVersion\Internet Settings")
+        .map_err(|e| AppError::Io(format!("Failed to open proxy registry key: {e}")))?;
+
+    let enabled: u32 = settings.get_value("ProxyEnable").unwrap_or(0);
+    log::debug!("proxy:windows ProxyEnable={}", enabled);
     if enabled == 0 {
         return Ok(None);
     }
 
-    let raw = match read_reg_string(subkey, "ProxyServer") {
+    let raw: String = match settings.get_value("ProxyServer") {
         Ok(s) => s,
         Err(_) => return Ok(None),
     };
@@ -68,7 +74,7 @@ fn get_system_proxy_impl() -> Result<Option<SystemProxyInfo>, AppError> {
         return Ok(None);
     }
 
-    let bypass = read_reg_string(subkey, "ProxyOverride").unwrap_or_default();
+    let bypass: String = settings.get_value("ProxyOverride").unwrap_or_default();
     log::debug!("proxy:windows ProxyOverride={:?}", bypass);
 
     let (server, is_socks) = parse_windows_proxy_server(&raw);
@@ -82,143 +88,6 @@ fn get_system_proxy_impl() -> Result<Option<SystemProxyInfo>, AppError> {
         bypass,
         is_socks,
     }))
-}
-
-/// Reads a `REG_DWORD` value from `HKCU\{subkey}\{name}`.
-#[cfg(target_os = "windows")]
-fn read_reg_dword(subkey: &str, name: &str) -> Result<u32, AppError> {
-    use std::ffi::OsStr;
-    use std::os::windows::ffi::OsStrExt;
-    use windows_sys::Win32::System::Registry::*;
-
-    let subkey_wide: Vec<u16> = OsStr::new(subkey)
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect();
-    let name_wide: Vec<u16> = OsStr::new(name)
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect();
-
-    let mut hkey: HKEY = std::ptr::null_mut();
-    let status = unsafe {
-        RegOpenKeyExW(
-            HKEY_CURRENT_USER,
-            subkey_wide.as_ptr(),
-            0,
-            KEY_READ,
-            &mut hkey,
-        )
-    };
-    if status != 0 {
-        return Err(AppError::Io(format!(
-            "RegOpenKeyExW failed for proxy settings: error {status}"
-        )));
-    }
-
-    let mut value: u32 = 0;
-    let mut data_size: u32 = 4;
-    let mut data_type: u32 = 0;
-    let status = unsafe {
-        RegQueryValueExW(
-            hkey,
-            name_wide.as_ptr(),
-            std::ptr::null_mut(),
-            &mut data_type,
-            &mut value as *mut u32 as *mut u8,
-            &mut data_size,
-        )
-    };
-    unsafe { RegCloseKey(hkey) };
-
-    if status != 0 || data_type != REG_DWORD {
-        return Err(AppError::Io(format!(
-            "RegQueryValueExW failed for {name}: error {status}"
-        )));
-    }
-
-    Ok(value)
-}
-
-/// Reads a `REG_SZ` value from `HKCU\{subkey}\{name}`.
-#[cfg(target_os = "windows")]
-fn read_reg_string(subkey: &str, name: &str) -> Result<String, AppError> {
-    use std::ffi::OsStr;
-    use std::os::windows::ffi::OsStrExt;
-    use windows_sys::Win32::System::Registry::*;
-
-    let subkey_wide: Vec<u16> = OsStr::new(subkey)
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect();
-    let name_wide: Vec<u16> = OsStr::new(name)
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect();
-
-    let mut hkey: HKEY = std::ptr::null_mut();
-    let status = unsafe {
-        RegOpenKeyExW(
-            HKEY_CURRENT_USER,
-            subkey_wide.as_ptr(),
-            0,
-            KEY_READ,
-            &mut hkey,
-        )
-    };
-    if status != 0 {
-        return Err(AppError::Io(format!(
-            "RegOpenKeyExW failed for proxy settings: error {status}"
-        )));
-    }
-
-    // Query value size
-    let mut data_type: u32 = 0;
-    let mut data_size: u32 = 0;
-    let status = unsafe {
-        RegQueryValueExW(
-            hkey,
-            name_wide.as_ptr(),
-            std::ptr::null_mut(),
-            &mut data_type,
-            std::ptr::null_mut(),
-            &mut data_size,
-        )
-    };
-    if status != 0 || data_type != REG_SZ || data_size == 0 {
-        unsafe { RegCloseKey(hkey) };
-        return Err(AppError::Io(format!(
-            "RegQueryValueExW size query failed for {name}: error {status}"
-        )));
-    }
-
-    // Read the value
-    let mut buffer: Vec<u8> = vec![0u8; data_size as usize];
-    let status = unsafe {
-        RegQueryValueExW(
-            hkey,
-            name_wide.as_ptr(),
-            std::ptr::null_mut(),
-            &mut data_type,
-            buffer.as_mut_ptr(),
-            &mut data_size,
-        )
-    };
-    unsafe { RegCloseKey(hkey) };
-
-    if status != 0 {
-        return Err(AppError::Io(format!(
-            "RegQueryValueExW read failed for {name}: error {status}"
-        )));
-    }
-
-    // Convert UTF-16 buffer to String
-    let wide: &[u16] = unsafe {
-        std::slice::from_raw_parts(buffer.as_ptr() as *const u16, data_size as usize / 2)
-    };
-    // Strip trailing null
-    let len = wide.iter().position(|&c| c == 0).unwrap_or(wide.len());
-    Ok(String::from_utf16_lossy(&wide[..len]))
 }
 
 /// Parses the Windows `ProxyServer` registry value into `(server_url, is_socks)`.
