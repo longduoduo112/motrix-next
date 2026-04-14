@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** @fileoverview Add task dialog: dual-tab layout (URI / Torrent) with WAAPI-driven animations. */
+/** @fileoverview Add task dialog: dual-tab layout (URI / Torrent) with AutoAnimate list transitions. */
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -45,6 +45,7 @@ import { useAppMessage } from '@/composables/useAppMessage'
 import type { DataTableColumns } from 'naive-ui'
 import type { BatchItem } from '@shared/types'
 import { FolderOpenOutline, CloudUploadOutline } from '@vicons/ionicons5'
+import { vAutoAnimate } from '@formkit/auto-animate'
 import AdvancedOptions from './addtask/AdvancedOptions.vue'
 
 const props = defineProps<{ show: boolean }>()
@@ -326,79 +327,6 @@ function removeBatchItem(item: BatchItem) {
   selectedBatchIndex.value = Math.min(selectedBatchIndex.value, Math.max(0, fileItems.value.length - 1))
 }
 
-// ── WAAPI animation hooks (TransitionGroup :css="false") ────────────
-// Pure JS — zero CSS class dependencies, immune to cascade conflicts.
-// FLIP technique: container height is animated alongside item animations.
-
-const batchListRef = ref<HTMLElement | null>(null)
-let savedContainerHeight = 0
-
-function onBeforeEnter() {
-  const c = batchListRef.value
-  if (c) savedContainerHeight = c.offsetHeight
-}
-
-function onItemEnter(el: Element, done: () => void) {
-  // ── Item animation ──
-  ;(el as HTMLElement).animate(
-    [
-      { opacity: 0, transform: 'translateY(-8px)' },
-      { opacity: 1, transform: 'translateY(0)' },
-    ],
-    { easing: 'ease-out', duration: 200 },
-  ).onfinish = done
-
-  // ── Container FLIP: animate height from snapshot → new natural height ──
-  const c = batchListRef.value
-  if (c && savedContainerHeight > 0) {
-    const newHeight = c.scrollHeight
-    if (savedContainerHeight !== newHeight) {
-      c.style.overflow = 'hidden'
-      c.animate([{ height: `${savedContainerHeight}px` }, { height: `${newHeight}px` }], {
-        easing: 'ease-out',
-        duration: 200,
-      }).onfinish = () => {
-        c.style.overflow = ''
-      }
-    }
-  }
-}
-
-function onBeforeLeave() {
-  const c = batchListRef.value
-  if (c) {
-    savedContainerHeight = c.offsetHeight
-    // Lock container height so it doesn't snap when Vue applies position:absolute
-    c.style.height = `${savedContainerHeight}px`
-  }
-}
-
-function onItemLeave(el: Element, done: () => void) {
-  const itemEl = el as HTMLElement
-  const c = batchListRef.value
-
-  // Pre-calculate target height: the leaving element is position:absolute (via CSS)
-  // but we can't read scrollHeight because the container height is locked.
-  // Instead, compute directly from the item's contribution.
-  const targetHeight = Math.max(0, savedContainerHeight - itemEl.offsetHeight)
-
-  // ── Container shrink: starts IMMEDIATELY (parallel with fade) ──
-  if (c) {
-    c.animate([{ height: `${savedContainerHeight}px` }, { height: `${targetHeight}px` }], {
-      easing: 'ease-out',
-      duration: 200,
-    }).onfinish = () => {
-      c.style.height = ''
-    }
-  }
-
-  // ── Item fade: runs in parallel, calls done() when finished ──
-  itemEl.animate([{ opacity: 1 }, { opacity: 0 }], {
-    easing: 'ease-out',
-    duration: 150,
-  }).onfinish = done
-}
-
 // ── Submit ───────────────────────────────────────────────────────────
 
 function handleClose() {
@@ -539,68 +467,57 @@ function kindTagType(kind: string): 'info' | 'success' | 'warning' {
 
           <!-- ── Torrent Tab ─────────────────────────────────── -->
           <NTabPane :name="ADD_TASK_TYPE.TORRENT" :tab="t('task.torrent-task') || 'Torrent'">
-            <div class="tab-pane-content">
+            <div v-auto-animate="{ duration: 200, easing: 'ease-out' }" class="tab-pane-content">
               <!-- Torrent panel: animated batch list + file detail -->
-              <Transition name="torrent-panel">
-                <div v-if="fileItems.length > 0" class="torrent-panel">
-                  <!-- Batch list with WAAPI animations + container FLIP -->
-                  <div ref="batchListRef" class="batch-list">
-                    <TransitionGroup
-                      tag="div"
-                      name="blist"
-                      @before-enter="onBeforeEnter"
-                      @enter="onItemEnter"
-                      @before-leave="onBeforeLeave"
-                      @leave="onItemLeave"
-                    >
-                      <div
-                        v-for="(item, idx) in fileItems"
-                        :key="item.id"
-                        class="batch-item"
-                        :class="{ 'batch-item-selected': idx === selectedBatchIndex }"
-                        @click="selectedBatchIndex = idx"
-                      >
-                        <div class="batch-item-main">
-                          <NEllipsis :style="{ maxWidth: '400px', flex: 1 }">{{ item.displayName }}</NEllipsis>
-                          <NSpace :size="4" align="center" :wrap="false">
-                            <NTag :type="kindTagType(item.kind)" size="small" :bordered="false">
-                              {{ item.kind === 'metalink' ? 'Metalink' : 'Torrent' }}
-                            </NTag>
-                            <NButton quaternary size="tiny" @click.stop="removeBatchItem(item)">✕</NButton>
-                          </NSpace>
-                        </div>
-                      </div>
-                    </TransitionGroup>
-                  </div>
-
-                  <!-- Add more files button -->
-                  <NButton size="small" dashed block style="margin-top: 6px" @click="chooseTorrentFile">
-                    <template #icon>
-                      <NIcon><CloudUploadOutline /></NIcon>
-                    </template>
-                    {{ t('task.select-torrent') || 'Select torrent files' }}
-                  </NButton>
-
-                  <!-- File detail for selected torrent -->
-                  <Transition name="content-fade" mode="out-in">
-                    <div
-                      v-if="selectedItem?.torrentMeta && selectedItem.torrentMeta.files.length > 0"
-                      :key="selectedItem?.id"
-                      class="torrent-file-list"
-                    >
-                      <NDataTable
-                        v-model:checked-row-keys="checkedRowKeys"
-                        :columns="fileColumns"
-                        :data="selectedItem.torrentMeta.files"
-                        :row-key="(row: any) => row.idx as number"
-                        size="small"
-                        :max-height="200"
-                        :scroll-x="400"
-                      />
+              <div v-if="fileItems.length > 0" class="torrent-panel">
+                <!-- Batch list with AutoAnimate transitions -->
+                <div v-auto-animate="{ duration: 200, easing: 'ease-out' }" class="batch-list">
+                  <div
+                    v-for="(item, idx) in fileItems"
+                    :key="item.id"
+                    class="batch-item"
+                    :class="{ 'batch-item-selected': idx === selectedBatchIndex }"
+                    @click="selectedBatchIndex = idx"
+                  >
+                    <div class="batch-item-main">
+                      <NEllipsis :style="{ maxWidth: '400px', flex: 1 }">{{ item.displayName }}</NEllipsis>
+                      <NSpace :size="4" align="center" :wrap="false">
+                        <NTag :type="kindTagType(item.kind)" size="small" :bordered="false">
+                          {{ item.kind === 'metalink' ? 'Metalink' : 'Torrent' }}
+                        </NTag>
+                        <NButton quaternary size="tiny" @click.stop="removeBatchItem(item)">✕</NButton>
+                      </NSpace>
                     </div>
-                  </Transition>
+                  </div>
                 </div>
-              </Transition>
+
+                <!-- Add more files button -->
+                <NButton size="small" dashed block style="margin-top: 6px" @click="chooseTorrentFile">
+                  <template #icon>
+                    <NIcon><CloudUploadOutline /></NIcon>
+                  </template>
+                  {{ t('task.select-torrent') || 'Select torrent files' }}
+                </NButton>
+
+                <!-- File detail for selected torrent -->
+                <Transition name="content-fade" mode="out-in">
+                  <div
+                    v-if="selectedItem?.torrentMeta && selectedItem.torrentMeta.files.length > 0"
+                    :key="selectedItem?.id"
+                    class="torrent-file-list"
+                  >
+                    <NDataTable
+                      v-model:checked-row-keys="checkedRowKeys"
+                      :columns="fileColumns"
+                      :data="selectedItem.torrentMeta.files"
+                      :row-key="(row: any) => row.idx as number"
+                      size="small"
+                      :max-height="200"
+                      :scroll-x="400"
+                    />
+                  </div>
+                </Transition>
+              </div>
 
               <!-- Upload zone: shown when no torrents loaded -->
               <div v-if="fileItems.length === 0" class="torrent-upload-zone" @click="chooseTorrentFile">
@@ -771,23 +688,6 @@ function kindTagType(kind: string): 'info' | 'success' | 'warning' {
 
 <!-- Non-scoped: Vue Transition classes must NOT be scoped -->
 <style>
-/* ── Torrent panel enter/leave ────────────────────────────────────── */
-.torrent-panel-enter-active {
-  transition:
-    opacity 0.2s ease-out,
-    transform 0.2s ease-out;
-}
-.torrent-panel-leave-active {
-  transition:
-    opacity 0.15s ease-out,
-    transform 0.15s ease-out;
-}
-.torrent-panel-enter-from,
-.torrent-panel-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
 /* ── Batch item base styles ───────────────────────────────────────── */
 .batch-item {
   padding: 8px 12px;
@@ -820,16 +720,6 @@ function kindTagType(kind: string): 'info' | 'success' | 'warning' {
 .content-fade-enter-from,
 .content-fade-leave-to {
   opacity: 0;
-}
-
-/* ── TransitionGroup sibling FLIP (move) + leave-active ───────────── */
-.blist-move {
-  transition: transform 200ms ease-out;
-}
-.blist-leave-active {
-  position: absolute;
-  left: 0;
-  right: 0;
 }
 
 /* ── Category hint below dir field ────────────────────────────────── */

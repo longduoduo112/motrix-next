@@ -427,41 +427,29 @@ describe('AddTask redesigned layout and animation structure', () => {
     expect(wrapper.findAll('.batch-item').length).toBe(2)
   })
 
-  // ── Animation: WAAPI TransitionGroup ───────────────────────────────
+  // ── Animation: AutoAnimate list transitions ─────────────────────────
 
-  it('uses TransitionGroup with name="blist" for WAAPI + CSS move hybrid', async () => {
+  it('uses v-auto-animate directive for batch list instead of TransitionGroup', async () => {
     const source = (await import('@/components/task/AddTask.vue?raw')).default
-    // name="blist" enables Vue's built-in sibling FLIP via .blist-move CSS
-    expect(source).toContain('name="blist"')
-    // Must NOT use old names that caused CSS cascade conflicts
+    // Must use AutoAnimate — the industry-standard library
+    expect(source).toContain('v-auto-animate')
+    expect(source).toContain('@formkit/auto-animate')
+    // Must NOT use old TransitionGroup names that caused CSS cascade conflicts
+    expect(source).not.toContain('name="blist"')
     expect(source).not.toContain('name="bitem"')
     expect(source).not.toContain('name="batch-item"')
-    // Must have .blist-move CSS for sibling FLIP and .blist-leave-active for position:absolute
-    expect(source).toContain('.blist-move')
-    expect(source).toContain('.blist-leave-active')
+    // Must NOT have hand-crafted TransitionGroup CSS classes
+    expect(source).not.toContain('.blist-move')
+    expect(source).not.toContain('.blist-leave-active')
   })
 
-  it('defines onItemEnter and onItemLeave WAAPI hooks in script', async () => {
+  it('does not define WAAPI animation hooks (AutoAnimate replaces them)', async () => {
     const source = (await import('@/components/task/AddTask.vue?raw')).default
-    expect(source).toContain('onItemEnter')
-    expect(source).toContain('onItemLeave')
-    // Must use Element.animate() — the WAAPI call
-    expect(source).toContain('.animate(')
-    // Must call done() callback for Vue to know when animation finishes
-    expect(source).toContain('.onfinish')
-  })
-
-  it('wires @enter and @leave hooks on the TransitionGroup', async () => {
-    const source = (await import('@/components/task/AddTask.vue?raw')).default
-    expect(source).toContain('@enter="onItemEnter"')
-    expect(source).toContain('@leave="onItemLeave"')
-  })
-
-  // ── Animation: torrent panel transition ────────────────────────────
-
-  it('wraps the torrent panel in a <Transition> for smooth enter/leave', async () => {
-    const source = (await import('@/components/task/AddTask.vue?raw')).default
-    expect(source).toContain('name="torrent-panel"')
+    expect(source).not.toContain('onItemEnter')
+    expect(source).not.toContain('onItemLeave')
+    expect(source).not.toContain('onBeforeEnter')
+    expect(source).not.toContain('onBeforeLeave')
+    expect(source).not.toContain('savedContainerHeight')
   })
 
   // ── Animation: content-fade retained ───────────────────────────────
@@ -473,7 +461,7 @@ describe('AddTask redesigned layout and animation structure', () => {
 
   // ── No CSS transition class pollution ──────────────────────────────
 
-  it('does not define bitem-* CSS classes (WAAPI replaces CSS transitions)', async () => {
+  it('does not define bitem-* CSS classes (AutoAnimate replaces CSS transitions)', async () => {
     const source = (await import('@/components/task/AddTask.vue?raw')).default
     expect(source).not.toContain('.bitem-enter-active')
     expect(source).not.toContain('.bitem-leave-active')

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /** @fileoverview Scrollable task list container with permanent brand watermark. */
 import { ref, computed, watch } from 'vue'
+import { vAutoAnimate } from '@formkit/auto-animate'
 import { useTaskStore } from '@/stores/task'
 import { useTheme } from '@/composables/useTheme'
 import TaskItem from './TaskItem.vue'
@@ -66,7 +67,7 @@ function handleItemClick(task: Aria2Task, event: MouseEvent) {
       <img :src="watermarkSrc" alt="Motrix Next" class="watermark-brand" draggable="false" />
     </div>
     <!-- Task cards render on top of the watermark -->
-    <TransitionGroup name="task-list" tag="div" class="task-list-inner">
+    <div v-auto-animate="{ duration: 300, easing: 'ease-out' }" class="task-list-inner">
       <div
         v-for="item in taskList"
         :key="item.gid"
@@ -87,7 +88,7 @@ function handleItemClick(task: Aria2Task, event: MouseEvent) {
           @stop-seeding="emit('stop-seeding', item)"
         />
       </div>
-    </TransitionGroup>
+    </div>
   </div>
 </template>
 
@@ -149,26 +150,5 @@ function handleItemClick(task: Aria2Task, event: MouseEvent) {
 }
 .task-list-item {
   margin-bottom: 16px;
-}
-
-/* ── TransitionGroup animations ───────────────────────────────────── */
-.task-list-enter-active {
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-}
-.task-list-leave-active {
-  transition: all 0.2s cubic-bezier(0.3, 0, 0.8, 0.15);
-  position: absolute;
-  width: 100%;
-}
-.task-list-enter-from {
-  opacity: 0;
-  transform: translateY(24px) scale(0.97);
-}
-.task-list-leave-to {
-  opacity: 0;
-  transform: translateY(-10px) scale(0.97);
-}
-.task-list-move {
-  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 </style>
