@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': '自動起動時にトレイに最小化',
   'minimize-to-tray-on-close': '閉じたときにトレイに最小化',
   'hide-dock-on-minimize': 'トレイに最小化時にDockアイコンを隠す (macOS)',
+  'lightweight-mode': '軽量モード',
+  'lightweight-mode-hint': 'トレイに最小化する際に WebView を破棄してメモリ使用量を削減します',
   'run-mode': '実行モード',
   'run-mode-standard': '標準',
   'run-mode-tray': 'トレイ',

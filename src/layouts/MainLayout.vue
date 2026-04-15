@@ -715,12 +715,12 @@ onMounted(async () => {
     // preventDefault() to prevent the native close.  The Rust on_window_event
     // handler calls api.prevent_close() as a parallel safeguard.
     event.preventDefault()
-    if (preferenceStore.config.minimizeToTrayOnClose) {
-      const { invoke } = await import('@tauri-apps/api/core')
-      await invoke('set_dock_visible', { visible: false })
-      await appWindow.hide()
-      return
-    }
+    // Rust on_window_event handles the full close flow:
+    // - minimizeToTrayOnClose=true → handle_minimize_to_tray (hide or destroy)
+    // - minimizeToTrayOnClose=false → emit("show-exit-dialog")
+    // This JS path is a fallback for platforms where the Rust event may
+    // not reliably fire (e.g. macOS traffic-light with overlay titlebar).
+    if (preferenceStore.config.minimizeToTrayOnClose) return
     if (!isExiting.value) {
       rememberChoice.value = !!preferenceStore.config.minimizeToTrayOnClose
       showExitDialog.value = true

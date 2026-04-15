@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'کمینه‌سازی به سینی سیستم هنگام شروع خودکار',
   'minimize-to-tray-on-close': 'کوچک‌سازی به سینی سیستم هنگام بستن',
   'hide-dock-on-minimize': 'مخفی کردن آیکون Dock هنگام کمینه‌سازی (macOS)',
+  'lightweight-mode': 'حالت سبک',
+  'lightweight-mode-hint': 'از بین بردن WebView هنگام کوچک‌سازی به سینی سیستم برای کاهش مصرف حافظه',
   'run-mode': 'حالت اجرا',
   'run-mode-standard': 'استاندارد',
   'run-mode-tray': 'نوار سیستم',

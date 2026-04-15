@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Start minimized to tray on autostart',
   'minimize-to-tray-on-close': 'Minimize to tray on close',
   'hide-dock-on-minimize': 'Hide Dock icon when minimized (macOS)',
+  'lightweight-mode': 'Lightweight Mode',
+  'lightweight-mode-hint': 'Destroy WebView on minimize to tray to reduce memory usage',
   'run-mode': 'Run Mode',
   'run-mode-standard': 'Standard',
   'run-mode-tray': 'Tray',

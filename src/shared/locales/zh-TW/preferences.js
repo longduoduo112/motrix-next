@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': '開機自啟時最小化到托盤',
   'minimize-to-tray-on-close': '關閉時最小化到托盤',
   'hide-dock-on-minimize': '最小化到系統匣時隱藏 Dock 圖示（macOS）',
+  'lightweight-mode': '輕量模式',
+  'lightweight-mode-hint': '最小化到系統匣時銷毀 WebView 以降低記憶體佔用',
   'run-mode': '執行模式',
   'run-mode-standard': '標準應用程式',
   'run-mode-tray': '工具列應用程式',

@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'ย่อลงถาดระบบเมื่อเปิดอัตโนมัติ',
   'minimize-to-tray-on-close': 'ย่อลงในถาดเมื่อปิด',
   'hide-dock-on-minimize': 'ซ่อนไอคอน Dock เมื่อย่อลงถาด (macOS)',
+  'lightweight-mode': 'โหมดเบา',
+  'lightweight-mode-hint': 'ทำลาย WebView เมื่อย่อลงถาดระบบเพื่อลดการใช้หน่วยความจำ',
   'run-mode': 'โหมดการทำงาน',
   'run-mode-standard': 'มาตรฐาน',
   'run-mode-tray': 'ถาดระบบ',

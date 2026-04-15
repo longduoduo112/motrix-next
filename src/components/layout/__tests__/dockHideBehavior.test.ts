@@ -54,41 +54,39 @@ function assertOrderedBefore(source: string, needle: string, after: string, cont
 // Group 1: WindowControls.vue — custom ✕ button Dock hide
 // ═══════════════════════════════════════════════════════════════════
 
-describe('WindowControls.vue — Dock hide on custom close button', () => {
+describe('WindowControls.vue — custom close button routes through Rust', () => {
   let source: string
 
   beforeAll(() => {
     source = fs.readFileSync(path.join(SRC_ROOT, 'src', 'components', 'layout', 'WindowControls.vue'), 'utf-8')
   })
 
-  it('close() is an async function (required for await invoke)', () => {
+  it('close() is an async function', () => {
     expect(source).toContain('async function close()')
   })
 
-  it('invokes set_dock_visible when minimizeToTrayOnClose is true', () => {
+  it('calls appWindow.close() when minimizeToTrayOnClose is true (triggers native CloseRequested)', () => {
     const closeBody = extractFunctionBody(source, 'async function close()')
     expect(closeBody).toBeTruthy()
-    expect(closeBody).toContain("invoke('set_dock_visible'")
+    expect(closeBody).toContain('appWindow.close()')
   })
 
-  it('calls set_dock_visible BEFORE appWindow.hide()', () => {
-    const closeBody = extractFunctionBody(source, 'async function close()')!
-    assertOrderedBefore(closeBody, "invoke('set_dock_visible'", 'appWindow.hide()', 'WindowControls.close()')
+  it('does NOT call appWindow.hide() directly (Rust handles hide/destroy)', () => {
+    const closeBody = extractFunctionBody(source, 'async function close()')
+    expect(closeBody).toBeTruthy()
+    expect(closeBody).not.toContain('appWindow.hide()')
+  })
+
+  it('does NOT invoke set_dock_visible directly (Rust handles Dock via handle_minimize_to_tray)', () => {
+    const closeBody = extractFunctionBody(source, 'async function close()')
+    expect(closeBody).toBeTruthy()
+    expect(closeBody).not.toContain("invoke('set_dock_visible'")
   })
 
   it('emits close event to parent when minimize-to-tray is disabled', () => {
     const closeBody = extractFunctionBody(source, 'async function close()')
     expect(closeBody).toBeTruthy()
-    // Must NOT call appWindow.close() — causes webview freeze on macOS (Tauri v2 bug).
-    // Instead emits 'close' to the parent component which shows the exit dialog.
-    expect(closeBody).not.toContain('appWindow.close()')
     expect(closeBody).toContain("emit('close')")
-  })
-
-  it('passes { visible: false } to set_dock_visible', () => {
-    const closeBody = extractFunctionBody(source, 'async function close()')
-    expect(closeBody).toBeTruthy()
-    expect(closeBody).toContain('{ visible: false }')
   })
 })
 
@@ -103,23 +101,32 @@ describe('MainLayout.vue — Dock hide on window close paths', () => {
     source = fs.readFileSync(path.join(SRC_ROOT, 'src', 'layouts', 'MainLayout.vue'), 'utf-8')
   })
 
-  describe('onCloseRequested direct hide path', () => {
-    it('invokes set_dock_visible in the minimizeToTrayOnClose branch', () => {
-      // The onCloseRequested handler checks minimizeToTrayOnClose and calls
-      // set_dock_visible as a Rust command. Assert this pattern exists.
+  describe('onCloseRequested — delegates to Rust for minimize-to-tray', () => {
+    it('registers the onCloseRequested listener', () => {
       const handlerStart = source.indexOf('onCloseRequested(async')
       expect(handlerStart).toBeGreaterThanOrEqual(0)
-      const handlerBody = extractFunctionBody(source, 'onCloseRequested(async')
-      expect(handlerBody).toBeTruthy()
-      expect(handlerBody).toContain("invoke('set_dock_visible'")
     })
 
-    it('calls set_dock_visible BEFORE appWindow.hide() in direct path', () => {
+    it('calls event.preventDefault() as safeguard', () => {
+      const handlerBody = extractFunctionBody(source, 'onCloseRequested(async')
+      expect(handlerBody).toBeTruthy()
+      expect(handlerBody).toContain('event.preventDefault()')
+    })
+
+    it('returns early when minimizeToTrayOnClose is true (Rust handles the close)', () => {
       const handlerBody = extractFunctionBody(source, 'onCloseRequested(async')!
-      // Within the minimizeToTrayOnClose branch, set_dock_visible must precede hide
-      const branchStart = handlerBody.indexOf('minimizeToTrayOnClose')
-      const branchSlice = handlerBody.slice(branchStart)
-      assertOrderedBefore(branchSlice, "invoke('set_dock_visible'", 'appWindow.hide()', 'onCloseRequested direct path')
+      expect(handlerBody).toContain('minimizeToTrayOnClose')
+      expect(handlerBody).toContain('return')
+    })
+
+    it('does NOT call appWindow.hide() directly (Rust handles hide/destroy)', () => {
+      const handlerBody = extractFunctionBody(source, 'onCloseRequested(async')!
+      expect(handlerBody).not.toContain('appWindow.hide()')
+    })
+
+    it('does NOT invoke set_dock_visible directly (Rust handles Dock)', () => {
+      const handlerBody = extractFunctionBody(source, 'onCloseRequested(async')!
+      expect(handlerBody).not.toContain("invoke('set_dock_visible'")
     })
   })
 
@@ -272,22 +279,26 @@ describe('lib.rs — on_window_event close interception', () => {
       expect(onWinBody).toContain('"minimizeToTrayOnClose"')
     })
 
-    it('reads hideDockOnMinimize from the persistent store', () => {
-      expect(onWinBody).toContain('"hideDockOnMinimize"')
+    it('delegates to handle_minimize_to_tray when should_hide is true', () => {
+      expect(onWinBody).toContain('handle_minimize_to_tray')
     })
 
-    it('reads both preferences from a single store access (no redundant reads)', () => {
-      const storeReads = onWinBody.split('.store("config.json")').length - 1
-      expect(storeReads).toBe(1)
+    it('handle_minimize_to_tray reads hideDockOnMinimize from the persistent store', () => {
+      const helperBody = extractFunctionBody(source, 'fn handle_minimize_to_tray')!
+      expect(helperBody).toContain('"hideDockOnMinimize"')
     })
 
-    it('hides the window when should_hide is true', () => {
-      expect(onWinBody).toContain('window.hide()')
+    it('handle_minimize_to_tray hides or destroys the window based on lightweightMode', () => {
+      const helperBody = extractFunctionBody(source, 'fn handle_minimize_to_tray')!
+      expect(helperBody).toContain('window.hide()')
+      expect(helperBody).toContain('window.destroy()')
+      expect(helperBody).toContain('"lightweightMode"')
     })
 
-    it('wraps set_activation_policy(Accessory) in cfg(target_os = "macos")', () => {
-      expect(onWinBody).toContain('#[cfg(target_os = "macos")]')
-      expect(onWinBody).toContain('ActivationPolicy::Accessory')
+    it('handle_minimize_to_tray wraps set_activation_policy(Accessory) in cfg(target_os = "macos")', () => {
+      const helperBody = extractFunctionBody(source, 'fn handle_minimize_to_tray')!
+      expect(helperBody).toContain('#[cfg(target_os = "macos")]')
+      expect(helperBody).toContain('ActivationPolicy::Accessory')
     })
 
     it('emits show-exit-dialog when minimize-to-tray is disabled', () => {

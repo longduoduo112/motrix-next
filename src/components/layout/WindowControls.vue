@@ -67,9 +67,9 @@ function toggleMaximize() {
 
 async function close() {
   if (preferenceStore.config.minimizeToTrayOnClose) {
-    const { invoke } = await import('@tauri-apps/api/core')
-    await invoke('set_dock_visible', { visible: false })
-    appWindow.hide()
+    // Trigger native CloseRequested → Rust on_window_event handles
+    // hide/destroy via handle_minimize_to_tray() + Dock visibility.
+    appWindow.close()
   } else {
     emit('close')
   }

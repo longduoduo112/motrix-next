@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'تصغير إلى شريط النظام عند بدء التشغيل التلقائي',
   'minimize-to-tray-on-close': 'تصغير إلى شريط المهام عند الإغلاق',
   'hide-dock-on-minimize': 'إخفاء أيقونة Dock عند التصغير (macOS)',
+  'lightweight-mode': 'الوضع الخفيف',
+  'lightweight-mode-hint': 'تدمير WebView عند التصغير إلى شريط النظام لتقليل استهلاك الذاكرة',
   'run-mode': 'وضع التشغيل',
   'run-mode-standard': 'قياسي',
   'run-mode-tray': 'شريط النظام',

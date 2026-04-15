@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Minimaliseren naar systeemvak bij automatisch opstarten',
   'minimize-to-tray-on-close': 'Minimaliseren naar systeemvak bij sluiten',
   'hide-dock-on-minimize': 'Dock-pictogram verbergen bij minimaliseren (macOS)',
+  'lightweight-mode': 'Lichtgewicht modus',
+  'lightweight-mode-hint': 'Vernietig WebView bij minimaliseren naar systeemvak om geheugengebruik te verminderen',
   'run-mode': 'Uitvoeringsmodus',
   'run-mode-standard': 'Standaard',
   'run-mode-tray': 'Systeemvak',

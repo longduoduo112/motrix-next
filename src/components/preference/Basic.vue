@@ -835,6 +835,16 @@ onMounted(async () => {
       <NFormItem v-if="isMac || isLinux" :label="t('preferences.tray-speedometer')">
         <NSwitch v-model:value="form.traySpeedometer" />
       </NFormItem>
+      <NFormItem :label="t('preferences.lightweight-mode')">
+        <NSwitch v-model:value="form.lightweightMode" :disabled="!form.minimizeToTrayOnClose" />
+      </NFormItem>
+      <NText
+        v-if="form.minimizeToTrayOnClose"
+        depth="3"
+        style="font-size: 12px; display: block; margin-top: -8px; margin-bottom: 8px; padding-left: 50px"
+      >
+        {{ t('preferences.lightweight-mode-hint') }}
+      </NText>
 
       <NDivider title-placement="left">{{ t('preferences.startup') }}</NDivider>
       <NFormItem :label="t('preferences.open-at-login')">

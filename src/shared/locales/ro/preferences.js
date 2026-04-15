@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Minimizare în bara de sistem la pornirea automată',
   'minimize-to-tray-on-close': 'Minimizare în bara de sistem la închidere',
   'hide-dock-on-minimize': 'Ascunde pictograma Dock la minimizare (macOS)',
+  'lightweight-mode': 'Mod ușor',
+  'lightweight-mode-hint': 'Distruge WebView la minimizarea în tava de sistem pentru a reduce consumul de memorie',
   'run-mode': 'Mod de execuție',
   'run-mode-standard': 'Standard',
   'run-mode-tray': 'Bara de sistem',

@@ -217,8 +217,11 @@ describe('Diagnostic logging — window lifecycle events', () => {
       expect(onWinBody).toContain('window:close-prevented')
     })
 
-    it('logs hide-to-tray action at info level', () => {
-      expect(onWinBody).toContain('window:hide-to-tray')
+    it('logs hide/destroy action via handle_minimize_to_tray at info level', () => {
+      // The actual hide/destroy logging moved to the shared helper
+      const helperBody = extractBody(libSource, 'fn handle_minimize_to_tray')
+      expect(helperBody).toContain('log::info!')
+      expect(helperBody).toContain('tray:hide')
     })
 
     it('logs show-exit-dialog action at info level', () => {

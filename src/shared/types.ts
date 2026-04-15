@@ -201,6 +201,7 @@ export interface AppConfig {
   autoHideWindow: boolean
   minimizeToTrayOnClose: boolean
   hideDockOnMinimize: boolean
+  lightweightMode: boolean
   autoSyncTracker: boolean
   keepSeeding: boolean
   keepWindowState: boolean

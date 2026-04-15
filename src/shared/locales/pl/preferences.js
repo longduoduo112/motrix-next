@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Minimalizuj do zasobnika systemowego przy autostarcie',
   'minimize-to-tray-on-close': 'Minimalizuj do zasobnika przy zamykaniu',
   'hide-dock-on-minimize': 'Ukryj ikonę Dock przy minimalizacji (macOS)',
+  'lightweight-mode': 'Tryb lekki',
+  'lightweight-mode-hint': 'Zniszcz WebView przy minimalizacji do zasobnika, aby zmniejszyć użycie pamięci',
   'run-mode': 'Tryb działania',
   'run-mode-standard': 'Standardowy',
   'run-mode-tray': 'Zasobnik',

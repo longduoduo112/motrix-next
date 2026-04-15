@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Minimer til systemstatusfeltet ved automatisk oppstart',
   'minimize-to-tray-on-close': 'Minimer til systemstatusfeltet ved lukking',
   'hide-dock-on-minimize': 'Skjul Dock-ikon ved minimering (macOS)',
+  'lightweight-mode': 'Lettvektsmodus',
+  'lightweight-mode-hint': 'Ødelegg WebView ved minimering til systemstatusfeltet for å redusere minnebruk',
   'run-mode': 'Kjøremodus',
   'run-mode-standard': 'Standard',
   'run-mode-tray': 'Systemkurv',

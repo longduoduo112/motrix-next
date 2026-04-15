@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Minimizar a la bandeja del sistema al inicio automático',
   'minimize-to-tray-on-close': 'Minimizar a la bandeja al cerrar',
   'hide-dock-on-minimize': 'Ocultar icono del Dock al minimizar (macOS)',
+  'lightweight-mode': 'Modo ligero',
+  'lightweight-mode-hint': 'Destruir WebView al minimizar a la bandeja para reducir el uso de memoria',
   'run-mode': 'Modo de ejecución',
   'run-mode-standard': 'Estándar',
   'run-mode-tray': 'Bandeja',

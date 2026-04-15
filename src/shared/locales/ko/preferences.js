@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': '자동 시작 시 트레이로 최소화',
   'minimize-to-tray-on-close': '닫을 때 트레이로 최소화',
   'hide-dock-on-minimize': '트레이로 최소화 시 Dock 아이콘 숨기기 (macOS)',
+  'lightweight-mode': '경량 모드',
+  'lightweight-mode-hint': '트레이로 최소화 시 WebView를 제거하여 메모리 사용량을 줄입니다',
   'run-mode': '실행 모드',
   'run-mode-standard': '표준',
   'run-mode-tray': '시스템 트레이',

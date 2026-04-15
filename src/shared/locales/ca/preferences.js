@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Minimitza a la safata del sistema en iniciar automàticament',
   'minimize-to-tray-on-close': 'Minimitzar a la safata en tancar',
   'hide-dock-on-minimize': 'Amaga la icona del Dock en minimitzar (macOS)',
+  'lightweight-mode': 'Mode lleuger',
+  'lightweight-mode-hint': 'Destruir el WebView en minimitzar a la safata per reduir l\'ús de memòria',
   'run-mode': 'Mode d\'execució',
   'run-mode-standard': 'Estàndard',
   'run-mode-tray': 'Safata',

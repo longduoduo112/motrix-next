@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Réduire dans la barre des tâches au démarrage automatique',
   'minimize-to-tray-on-close': 'Réduire dans la barre des tâches à la fermeture',
   'hide-dock-on-minimize': 'Masquer l\u0027icône du Dock lors de la réduction (macOS)',
+  'lightweight-mode': 'Mode léger',
+  'lightweight-mode-hint': 'Détruire le WebView lors de la réduction dans la barre des tâches pour réduire la mémoire',
   'run-mode': 'Mode d\'exécution',
   'run-mode-standard': 'Standard',
   'run-mode-tray': 'Barre de menu',

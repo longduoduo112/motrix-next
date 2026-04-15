@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Otomatik başlatmada sistem tepsisine küçült',
   'minimize-to-tray-on-close': 'Kapatıldığında sistem tepsisine küçült',
   'hide-dock-on-minimize': 'Küçültüldüğünde Dock simgesini gizle (macOS)',
+  'lightweight-mode': 'Hafif Mod',
+  'lightweight-mode-hint': 'Sistem tepsisine küçültürken WebView\'ı yok ederek bellek kullanımını azaltın',
   'run-mode': 'Çalışma modu',
   'run-mode-standard': 'Standart',
   'run-mode-tray': 'Sistem tepsisi',

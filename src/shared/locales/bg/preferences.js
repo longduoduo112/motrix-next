@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Минимизиране в областта за уведомяване при автоматично стартиране',
   'minimize-to-tray-on-close': 'Минимизиране в системния трей при затваряне',
   'hide-dock-on-minimize': 'Скриване на иконата в Dock при минимизиране (macOS)',
+  'lightweight-mode': 'Олекотен режим',
+  'lightweight-mode-hint': 'Унищожаване на WebView при минимизиране в системния трей за намаляване на паметта',
   'run-mode': 'Режим на работа',
   'run-mode-standard': 'Стандартен',
   'run-mode-tray': 'Системна лента',

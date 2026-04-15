@@ -241,6 +241,7 @@ export const DEFAULT_APP_CONFIG = {
   autoHideWindow: false,
   minimizeToTrayOnClose: false, // close=quit is default UX
   hideDockOnMinimize: false, // macOS: hide Dock icon when minimized to tray
+  lightweightMode: false, // destroy WebView on minimize-to-tray to free ~300MB RAM
   showProgressBar: true,
   traySpeedometer: false, // opt-in: supported on macOS menu bar + Linux appindicator
   dockBadgeSpeed: true, // macOS Dock badge on by default

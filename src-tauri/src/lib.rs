@@ -48,6 +48,44 @@ pub(crate) fn read_log_level() -> log::LevelFilter {
     .unwrap_or(log::LevelFilter::Debug)
 }
 
+/// Minimizes the main window to tray, either by destroying the WebView
+/// (lightweight mode — reduces memory usage) or by
+/// hiding it (standard mode — instant show on tray click).
+///
+/// Shared by `on_window_event(CloseRequested)` and `on_menu_event("close-window")`
+/// to keep the two close paths consistent.
+fn handle_minimize_to_tray(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+    let store_prefs = app
+        .store("config.json")
+        .ok()
+        .and_then(|s| s.get("preferences"));
+
+    let lightweight = store_prefs
+        .as_ref()
+        .and_then(|p| p.get("lightweightMode")?.as_bool())
+        .unwrap_or(false);
+
+    if lightweight {
+        log::info!("tray:lightweight-destroy label={}", window.label());
+        let _ = window.destroy();
+    } else {
+        log::info!("tray:hide label={}", window.label());
+        let _ = window.hide();
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let hide_dock = store_prefs
+            .as_ref()
+            .and_then(|p| p.get("hideDockOnMinimize")?.as_bool())
+            .unwrap_or(false);
+        if hide_dock {
+            use tauri::ActivationPolicy;
+            let _ = app.set_activation_policy(ActivationPolicy::Accessory);
+        }
+    }
+}
+
 /// Initialises menus, tray, deep links, window state, and platform-specific
 /// workarounds.  Called once by `Builder.setup()`.
 fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -113,29 +151,17 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         "close-window" => {
             log::info!("menu:close-window — handling Cmd+W");
 
-            let store_prefs = app
+            let should_hide = app
                 .store("config.json")
                 .ok()
-                .and_then(|s| s.get("preferences"));
-
-            let should_hide = store_prefs
+                .and_then(|s| s.get("preferences"))
                 .as_ref()
                 .and_then(|p| p.get("minimizeToTrayOnClose")?.as_bool())
                 .unwrap_or(false);
 
             if should_hide {
-                log::info!("menu:close-window — hiding to tray");
                 if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
-                }
-
-                let hide_dock = store_prefs
-                    .as_ref()
-                    .and_then(|p| p.get("hideDockOnMinimize")?.as_bool())
-                    .unwrap_or(false);
-                if hide_dock {
-                    use tauri::ActivationPolicy;
-                    let _ = app.set_activation_policy(ActivationPolicy::Accessory);
+                    handle_minimize_to_tray(app, &window);
                 }
             } else {
                 log::info!("menu:close-window — showing exit dialog");
@@ -754,12 +780,10 @@ pub fn run() {
 
                 // Read minimize-to-tray preference directly from the
                 // persistent store (Rust-side, no IPC round-trip).
-                let store_prefs = app
+                let should_hide = app
                     .store("config.json")
                     .ok()
-                    .and_then(|s| s.get("preferences"));
-
-                let should_hide = store_prefs
+                    .and_then(|s| s.get("preferences"))
                     .as_ref()
                     .and_then(|p| p.get("minimizeToTrayOnClose")?.as_bool())
                     .unwrap_or(false);
@@ -767,49 +791,12 @@ pub fn run() {
                 log::debug!("window:prefs minimizeToTrayOnClose={}", should_hide);
 
                 if should_hide {
-                    // Lightweight mode: destroy the WebView to free memory.
+                    // Lightweight mode destroys the WebView to reduce memory usage;
+                    // standard mode hides it for instant show on tray click.
                     // Window is fully recreated on tray-click via get_or_create_main_window.
                     // Downloads, monitoring, and tray continue — they run in Rust.
-                    let lightweight = store_prefs
-                        .as_ref()
-                        .and_then(|p| p.get("lightweightMode")?.as_bool())
-                        .unwrap_or(false);
-
-                    if lightweight {
-                        log::info!("window:lightweight-destroy label=main");
-
-                        #[cfg(target_os = "macos")]
-                        {
-                            let hide_dock = store_prefs
-                                .as_ref()
-                                .and_then(|p| p.get("hideDockOnMinimize")?.as_bool())
-                                .unwrap_or(false);
-                            if hide_dock {
-                                use tauri::ActivationPolicy;
-                                let _ = app.set_activation_policy(ActivationPolicy::Accessory);
-                            }
-                        }
-
-                        // destroy() removes the WebView; prevent_close() above
-                        // already stopped the default close. We must close the
-                        // window ourselves via WebviewWindow::destroy().
-                        let _ = window.destroy();
-                    } else {
-                        log::info!("window:hide-to-tray label=main");
-                        let _ = window.hide();
-
-                        #[cfg(target_os = "macos")]
-                        {
-                            let hide_dock = store_prefs
-                                .as_ref()
-                                .and_then(|p| p.get("hideDockOnMinimize")?.as_bool())
-                                .unwrap_or(false);
-                            log::debug!("window:prefs hideDockOnMinimize={}", hide_dock);
-                            if hide_dock {
-                                use tauri::ActivationPolicy;
-                                let _ = app.set_activation_policy(ActivationPolicy::Accessory);
-                            }
-                        }
+                    if let Some(wv) = app.get_webview_window(window.label()) {
+                        handle_minimize_to_tray(app, &wv);
                     }
                 } else {
                     log::info!("window:show-exit-dialog label=main");

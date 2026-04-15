@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Minimizza nella barra di sistema all\'avvio automatico',
   'minimize-to-tray-on-close': 'Riduci a icona nella barra delle applicazioni alla chiusura',
   'hide-dock-on-minimize': 'Nascondi icona Dock quando minimizzato (macOS)',
+  'lightweight-mode': 'Modalità leggera',
+  'lightweight-mode-hint': 'Distruggi la WebView quando minimizzato nel vassoio per ridurre l\'uso della memoria',
   'run-mode': 'Modalità di esecuzione',
   'run-mode-standard': 'Standard',
   'run-mode-tray': 'Barra di sistema',

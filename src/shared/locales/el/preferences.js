@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Ελαχιστοποίηση στο δίσκο συστήματος κατά την αυτόματη εκκίνηση',
   'minimize-to-tray-on-close': 'Ελαχιστοποίηση στο δίσκο κατά το κλείσιμο',
   'hide-dock-on-minimize': 'Απόκρυψη εικονιδίου Dock κατά την ελαχιστοποίηση (macOS)',
+  'lightweight-mode': 'Ελαφρύ λειτουργία',
+  'lightweight-mode-hint': 'Καταστροφή του WebView κατά την ελαχιστοποίηση στο δίσκο για μείωση της χρήσης μνήμης',
   'run-mode': 'Λειτουργία εκτέλεσης',
   'run-mode-standard': 'Τυπική',
   'run-mode-tray': 'Γραμμή εργασιών',

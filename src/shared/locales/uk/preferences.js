@@ -50,6 +50,8 @@ export default {
   'auto-hide-window': 'Згортати в трей при автозапуску',
   'minimize-to-tray-on-close': 'Згортати в трей при закритті',
   'hide-dock-on-minimize': 'Приховати іконку Dock при згортанні (macOS)',
+  'lightweight-mode': 'Полегшений режим',
+  'lightweight-mode-hint': 'Знищити WebView при згортанні в трей для зменшення використання памʼяті',
   'run-mode': 'Режим роботи',
   'run-mode-standard': 'Стандартний',
   'run-mode-tray': 'Системний лоток',
