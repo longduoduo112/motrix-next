@@ -143,7 +143,7 @@
             >
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
-            <span id="theme-toggle-label" data-i18n="theme.system">System</span>
+            <span id="theme-toggle-label">System</span>
           </button>
           <div class="theme-dropdown" id="theme-dropdown">
             <button class="theme-option" data-theme="system" id="theme-system-hint">
@@ -300,12 +300,7 @@
           >
         </div>
         <div class="hero-stats" id="hero-stats">
-          <a
-            href="https://github.com/AnInsomniacy/motrix-next/stargazers"
-            class="hero-stat"
-            target="_blank"
-            rel="noopener"
-          >
+          <span class="hero-stat">
             <svg
               viewBox="0 0 24 24"
               width="14"
@@ -322,13 +317,8 @@
             </svg>
             <span class="hero-stat-value loading" id="stat-stars">&middot;&middot;&middot;</span>
             <span class="hero-stat-label" data-i18n="hero.stars">Stars</span>
-          </a>
-          <a
-            href="https://github.com/AnInsomniacy/motrix-next/releases"
-            class="hero-stat"
-            target="_blank"
-            rel="noopener"
-          >
+          </span>
+          <span class="hero-stat">
             <svg
               viewBox="0 0 24 24"
               width="14"
@@ -345,13 +335,8 @@
             </svg>
             <span class="hero-stat-value loading" id="stat-downloads">&middot;&middot;&middot;</span>
             <span class="hero-stat-label" data-i18n="hero.downloads">Downloads</span>
-          </a>
-          <a
-            href="https://github.com/AnInsomniacy/motrix-next/releases/latest"
-            class="hero-stat"
-            target="_blank"
-            rel="noopener"
-          >
+          </span>
+          <span class="hero-stat">
             <svg
               viewBox="0 0 24 24"
               width="14"
@@ -367,7 +352,7 @@
             </svg>
             <span class="hero-stat-value loading" id="stat-version">&middot;&middot;&middot;</span>
             <span class="hero-stat-label" data-i18n="hero.version">Latest</span>
-          </a>
+          </span>
         </div>
         <div class="hero-actions">
           <a
@@ -475,9 +460,6 @@
       </section>
 
       <section id="rewrite" class="section section-wide">
-        <div class="rewrite-watermark" aria-hidden="true">
-          <img src="assets/logo-bolt-dark.png" alt="" width="500" height="500" loading="lazy" />
-        </div>
         <h2 class="reveal" data-i18n="rewrite.title">A ground-up rewrite.</h2>
         <p class="lead reveal" data-i18n="rewrite.lead">Same download manager spirit, entirely new codebase.</p>
         <div class="table-wrap reveal">
@@ -908,7 +890,7 @@
           </svg>
           <span id="dl-primary-text" data-i18n="dl.primary.fallback">Download latest release</span>
         </a>
-        <p class="dl-version reveal" id="dl-version"></p>
+
         <button class="dl-toggle reveal" id="dl-toggle" type="button" data-i18n="dl.toggle">All platforms</button>
         <div class="dl-all" id="dl-all">
           <div class="dl-grid" id="dl-grid"></div>
@@ -928,6 +910,7 @@
               src="https://api.star-history.com/chart?repos=AnInsomniacy/motrix-next&type=date&theme=dark&legend=top-left"
               alt="Star History Chart"
               loading="lazy"
+              onload="this.closest('.star-history-frame').classList.add('loaded')"
             />
           </a>
         </div>
@@ -1196,7 +1179,7 @@
         const detected = document.getElementById('dl-detected')
         const primary = document.getElementById('dl-primary')
         const primaryText = document.getElementById('dl-primary-text')
-        const versionEl = document.getElementById('dl-version')
+
         const toggle = document.getElementById('dl-toggle')
         const allWrap = document.getElementById('dl-all')
         const grid = document.getElementById('dl-grid')
@@ -1207,7 +1190,7 @@
         let hasPrimaryOS = false
         i18n.onLocaleChange(() => {
           if (os) detected.textContent = i18n.t('dl.detected', { os })
-          if (cachedVer) versionEl.textContent = i18n.t('dl.version', { ver: cachedVer })
+
           if (hasPrimaryOS) {
             primaryText.textContent = i18n.t('dl.primary', { os })
           } else {
@@ -1304,7 +1287,7 @@
           cachedVer = ver
           releaseUrl = data.html_url || releaseUrl
 
-          versionEl.textContent = i18n.t('dl.version', { ver })
+
 
           for (const p of PLATFORMS) {
             const a = assets.find((a) => p.match(a.name))
@@ -1464,6 +1447,8 @@
           // Swap star history chart to match theme
           const sh = document.getElementById('star-history-chart')
           if (sh) {
+            const frame = sh.closest('.star-history-frame')
+            if (frame) frame.classList.remove('loaded')
             const base = 'https://api.star-history.com/chart?repos=AnInsomniacy/motrix-next&type=date&legend=top-left'
             sh.src = effective === 'dark' ? base + '&theme=dark' : base
           }
@@ -1471,6 +1456,9 @@
 
         // Apply immediately
         applyTheme(getStored())
+
+        // Re-apply label text when locale changes
+        i18n.onLocaleChange(() => applyTheme(getStored()))
 
         // Toggle dropdown
         toggle.addEventListener('click', (e) => {
